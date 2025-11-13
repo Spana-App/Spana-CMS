@@ -1,16 +1,14 @@
 import './App.css'
-import { DashboardSidebar } from './components/sidebar'
 // import { DashboardHeader } from './components/dashboardheader'
+import { Layout } from './components/layout'
+
+
+
 
 function App() {
   return (
     <>
-    <aside>
-      <DashboardSidebar activeTab="overview" onTabChange={() => {}} />
-    </aside>
-    {/* <header>
-      <DashboardHeader />
-    </header> */}
+      <Layout>{null}</Layout>
     </>
   )
 }

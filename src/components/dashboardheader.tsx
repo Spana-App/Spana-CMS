@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Search, User } from "lucide-react";
+import { Bell, User } from "lucide-react";
 
 export function DashboardHeader() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -8,7 +8,8 @@ export function DashboardHeader() {
     <>
       <style>{`
         .header {
-          height: 4rem;
+          height: 100%;
+          width: 100%;  
           border-bottom: 1px solid #e5e7eb;
           background-color: white;
           display: flex;
@@ -196,12 +197,12 @@ export function DashboardHeader() {
       <header className="header">
         <div className="search-container">
           <div className="search-wrapper">
-            <Search className="search-icon" />
+            {/* <Search className="search-icon" />
             <input
               type="text"
               placeholder="Search users, bookings, services..."
               className="search-input"
-            />
+            /> */}
           </div>
         </div>
 
