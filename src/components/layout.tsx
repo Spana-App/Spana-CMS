@@ -2,8 +2,9 @@ import React from 'react';
 import '../Styles/layout.css';
 import { DashboardSidebar } from './sidebar';
 import { DashboardHeader } from './dashboardheader';
+import { Outlet } from 'react-router-dom';
 
-export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const Layout: React.FC = () => {
     return (
         <div className="layout">
             <nav className="header-navbar">
@@ -12,11 +13,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
             <div className="layout-container">
                 <aside className="aside-bar">
-                    <DashboardSidebar activeTab="overview" onTabChange={() => {}} />
+                    <DashboardSidebar />
                 </aside>
 
                 <main className="main-content">
-                    {children}
+                    <Outlet />
                 </main>
             </div>
 

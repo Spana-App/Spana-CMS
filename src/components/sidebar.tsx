@@ -14,10 +14,11 @@ import {
   UserCog,
 } from "lucide-react";
 import "../Styles/sidebar.css"
+import { NavLink } from 'react-router-dom';
 
 const menuItems = [
   { id: "overview", label: "Overview", icon: Home },
-  { id: "users", label: "User Management", icon: Users },
+  { id: "usermanagement", label: "User Management", icon: Users },
   { id: "services", label: "Services", icon: Package },
   { id: "bookings", label: "Bookings", icon: Calendar },
   { id: "documents", label: "Documents", icon: FileText },
@@ -31,11 +32,16 @@ const menuItems = [
 ];
 
 interface Tabs {
-    activeTab: string,
-    onTabChange: (tabId: string) => void
+    activeTab?: string,
+    onTabChange?: (tabId: string) => void
 }
 
-export function DashboardSidebar({ activeTab, onTabChange }: Tabs) {
+export function DashboardSidebar(props: Tabs) {
+
+  const handleTabChange = (id: string) =>{
+    if (props.onTabChange) props.onTabChange(id);
+  }
+
   return (
     <>
       <aside className="sidebar">
@@ -55,17 +61,17 @@ export function DashboardSidebar({ activeTab, onTabChange }: Tabs) {
           <div className="sidebar-menu">
             {menuItems.map((item) => {
               const Icon = item.icon;
+              const to = item.id === 'overview' ? '/' : `/${item.id}`;
               return (
-                <button
+                <NavLink
                   key={item.id}
-                  onClick={() => onTabChange(item.id)}
-                  className={`sidebar-menu-item ${
-                    activeTab === item.id ? "active" : ""
-                  }`}
+                  to={to}
+                  onClick={() => handleTabChange(item.id)}
+                  className={(navData: { isActive: boolean }) => `sidebar-menu-item ${navData.isActive ? 'active' : ''}`}
                 >
                   <Icon className="sidebar-menu-icon" />
                   {item.label}
-                </button>
+                </NavLink>
               );
             })}
           </div>
@@ -76,20 +82,3 @@ export function DashboardSidebar({ activeTab, onTabChange }: Tabs) {
   );
 }
 
-// export default function App() {
-//   const [activeTab, setActiveTab] = useState("overview");
-
-//   return (
-//     <div style={{ display: "flex", height: "100vh" }}>
-//       <DashboardSidebar activeTab={activeTab} onTabChange={setActiveTab} />
-//       <main style={{ flex: 1, padding: "2rem", backgroundColor: "#ffffff" }}>
-//         <h2 style={{ fontSize: "1.5rem", fontWeight: "600", marginBottom: "1rem" }}>
-//           {menuItems.find((item) => item.id === activeTab)?.label}
-//         </h2>
-//         <p style={{ color: "#6b7280" }}>
-//           Content for {activeTab} section goes here.
-//         </p>
-//       </main>
-//     </div>
-//   );
-// }
