@@ -1,12 +1,20 @@
 import { useState } from "react";
 import { Bell, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export function DashboardHeader() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  const navigate = useNavigate();
+
+  const handleProfile = () =>{
+    navigate("/dashboard/profile");
+    setIsDropdownOpen(false);
+  };
+
   return (
     <>
-      <style>{`
+      <style>{` 
         .header {
           height: 100%;
           width: 100%;  
@@ -226,7 +234,7 @@ export function DashboardHeader() {
             <div className={`dropdown-menu ${!isDropdownOpen ? "hidden" : ""}`}>
               <div className="dropdown-label">My Account</div>
               <div className="dropdown-separator"></div>
-              <button className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
+              <button className="dropdown-item" onClick={() => handleProfile()}>
                 <User className="dropdown-item-icon" />
                 Profile Settings
               </button>
