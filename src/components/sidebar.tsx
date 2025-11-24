@@ -32,13 +32,13 @@ const menuItems = [
 ];
 
 interface Tabs {
-    activeTab?: string,
-    onTabChange?: (tabId: string) => void
+  activeTab?: string,
+  onTabChange?: (tabId: string) => void
 }
 
 export function DashboardSidebar(props: Tabs) {
 
-  const handleTabChange = (id: string) =>{
+  const handleTabChange = (id: string) => {
     if (props.onTabChange) props.onTabChange(id);
   }
 
@@ -57,26 +57,25 @@ export function DashboardSidebar(props: Tabs) {
           </div>
         </div>
 
-        <nav className="sidebar-nav">
-          <div className="sidebar-menu">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const to = item.id === 'overview' ? '/' : `/${item.id}`;
-              return (
-                <NavLink
-                  key={item.id}
-                  to={to}
-                  onClick={() => handleTabChange(item.id)}
-                  className={(navData: { isActive: boolean }) => `sidebar-menu-item ${navData.isActive ? 'active' : ''}`}
-                >
-                  <Icon className="sidebar-menu-icon" />
-                  {item.label}
-                </NavLink>
-              );
-            })}
-          </div>
-          <hr className="line"></hr>
-        </nav>
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          const to = `/dashboard/${item.id}`;
+
+          return (
+            <NavLink
+              key={item.id}
+              to={to}
+              onClick={() => handleTabChange(item.id)}
+              className={(navData) =>
+                `sidebar-menu-item ${navData.isActive ? 'active' : ''}`
+              }
+            >
+              <Icon className="sidebar-menu-icon" />
+              {item.label}
+            </NavLink>
+          );
+        })}
+
       </aside>
     </>
   );
