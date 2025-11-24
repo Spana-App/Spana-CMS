@@ -61,17 +61,17 @@ export default function LoginPage() {
               />
             </div>
 
-            <button type="submit" className="login-button" onClick={() => navigate("/dashboard")}>
+            <button type="submit" className="login-button" onClick={() => navigate("/otp")}>
               Sign in
             </button>
           </form>
 
-          <div className="signup-text">
+          {/* <div className="signup-text">
             Don't have an account?{" "}
             <a href="#" className="signup-link">
               Sign up
             </a>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -85,12 +85,12 @@ export default function LoginPage() {
           />
           <div className="image-overlay" />
           <div className="image-content">
-            <blockquote className="testimonial">
+            {/* <blockquote className="testimonial">
               <p className="testimonial-text">
                 "This platform has transformed the way we work. Simple, powerful, and elegant."
               </p>
               <footer className="testimonial-author">— Alson Radebe</footer>
-            </blockquote>
+            </blockquote> */}
           </div>
         </div>
       </div>
