@@ -1,18 +1,44 @@
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import "../Styles/login.css"
 import LoginImage from "../assets/modern-abstract-geometric-pattern-with-dark-tones-.jpg"
 import { useNavigate } from "react-router"
+import { useAuthStore } from "../store/authentication"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const navigate = useNavigate();
+  const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Clear error when inputs change
+  useEffect(() => {
+    if (error) {
+      clearError();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email, password]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Login attempt with:", { email, password })
-    // Add your login logic here
+    try {
+      await login({ email, password });
+      // Navigate to OTP page on success
+      navigate("/otp", {
+        state: { successMessage: "You have successfully logged in." },
+      });
+      
+    } catch (err) {
+      // Error is handled by the store
+      console.error("Login failed:", err);
+    }
   }
 
   return (
@@ -61,8 +87,22 @@ export default function LoginPage() {
               />
             </div>
 
-            <button type="submit" className="login-button" onClick={() => navigate("/otp")}>
-              Sign in
+            {error && (
+              <div className="error-message" style={{ 
+                color: '#ef4444', 
+                fontSize: '0.875rem', 
+                marginTop: '-0.5rem',
+                marginBottom: '0.5rem'
+              }}>
+                {error}
+              </div>
+            )}
+            <button 
+              type="submit" 
+              className="login-button" 
+              disabled={isLoading}
+            >
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 

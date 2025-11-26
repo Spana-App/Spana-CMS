@@ -3,13 +3,38 @@ import { useState, useRef, useEffect } from "react";
 import "../Styles/otp.css";
 import LoginImage from "../assets/modern-abstract-geometric-pattern-with-dark-tones-.jpg";
 import { useNavigate } from "react-router";
+import { useAuthStore } from "../store/authentication";
 
 export default function OTPPage() {
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
+  const [email, setEmail] = useState("");
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const navigate = useNavigate();
+  const { verifyOTP, isLoading, error, clearError, pendingEmail, isAuthenticated } = useAuthStore();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Pre-populate email from login page
+  useEffect(() => {
+    if (pendingEmail) {
+      setEmail(pendingEmail);
+    }
+  }, [pendingEmail]);
+
+  // Clear error when OTP or email changes
+  useEffect(() => {
+    if (error) {
+      clearError();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otp, email]);
 
   useEffect(() => {
     // Focus first input on mount
@@ -78,21 +103,27 @@ export default function OTPPage() {
     setTimer(60);
     setCanResend(false);
     inputRefs.current[0]?.focus();
-    // Add your resend OTP logic here
+    // TODO: Add resend OTP API call if your backend supports it
     console.log("Resending OTP...");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const otpString = otp.join("");
-    if (otpString.length === 6) {
-      console.log("OTP submitted:", otpString);
-      // Add your OTP verification logic here
-      // navigate("/dashboard");
+    if (otpString.length === 6 && email) {
+      try {
+        console.log("Verifying OTP code:", otpString, "for email:", email);
+        await verifyOTP(email, otpString);
+        // Navigation will happen automatically via useEffect when isAuthenticated becomes true
+      } catch (err) {
+        // Error is handled by the store
+        console.error("OTP verification failed:", err);
+      }
     }
   };
 
   const isOtpComplete = otp.every((digit) => digit !== "");
+  const isFormValid = isOtpComplete && email.trim() !== "";
 
   return (
     <div className="otp-container">
@@ -107,6 +138,30 @@ export default function OTPPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="otp-form">
+            {error && (
+              <div className="error-message" style={{ 
+                color: '#ef4444', 
+                fontSize: '0.875rem', 
+                marginBottom: '1rem',
+                textAlign: 'center'
+              }}>
+                {error}
+              </div>
+            )}
+            <div className="form-group">
+              <label htmlFor="email" className="form-label">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="form-input"
+              />
+            </div>
             <div className="otp-input-group">
               {otp.map((digit, index) => (
                 <input
@@ -128,10 +183,9 @@ export default function OTPPage() {
             <button
               type="submit"
               className="verify-button"
-              disabled={!isOtpComplete}
-              onClick={() => navigate("/dashboard")}
+              disabled={!isFormValid || isLoading}
             >
-              Verify
+              {isLoading ? 'Verifying...' : 'Verify'}
             </button>
           </form>
 

@@ -53,6 +53,40 @@
   gap: 1.5rem;
 }
 
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0a0a0a;
+}
+
+.form-input {
+  height: 3rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  color: #0a0a0a;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #0a0a0a;
+  box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.1);
+}
+
+.form-input::placeholder {
+  color: #a3a3a3;
+}
+
 .otp-input-group {
   display: flex;
   justify-content: space-between;
