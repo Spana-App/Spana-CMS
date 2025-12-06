@@ -1,15 +1,27 @@
-import { useState } from "react";
+import { Activity, useState } from "react";
 import { Bell, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../store/authentication";
 
 export function DashboardHeader() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { logout } = useAuthStore();
 
   const navigate = useNavigate();
 
   const handleProfile = () =>{
     navigate("/dashboard/profile");
     setIsDropdownOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+
+    setTimeout(()=>
+    <Activity>Logging out...</Activity>
+    ), 1000;
+    
+    navigate("/");
   };
 
   return (
@@ -238,7 +250,7 @@ export function DashboardHeader() {
                 <User className="dropdown-item-icon" />
                 Profile Settings
               </button>
-              <button className="dropdown-item destructive" onClick={() => setIsDropdownOpen(false)}>
+              <button className="dropdown-item destructive" onClick={() => handleLogout()}>
                 Log out
               </button>
             </div>
