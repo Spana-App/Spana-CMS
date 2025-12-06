@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Users, Calendar, DollarSign, TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import '../Styles/overview.css';
 
 interface Activity {
@@ -27,6 +29,31 @@ const activities: Activity[] = [
 ];
 
 export default function DashboardPage() {
+  const location = useLocation();
+  const state = location.state as { successMessage?: string } | null;
+  const navigate = useNavigate();
+
+  const [bannerMessage, setBannerMessage] = useState<string | null>(
+    state?.successMessage ?? null
+  );
+
+  useEffect(() => {
+    if (state?.successMessage) {
+      setBannerMessage(state.successMessage);
+
+      const timer = setTimeout(() => {
+        setBannerMessage(null);
+        // Remove successMessage from history state without reloading
+        navigate(location.pathname, {
+          replace: true,
+          state: {},
+        });
+      }, 10000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [state?.successMessage, navigate, location.pathname]);
+
   return (
     <div className="dashboard-overview-container">
       {/* Header Section */}
@@ -38,6 +65,23 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {bannerMessage && (
+        <div
+          className="success-banner"
+          style={{
+            marginBottom: '1rem',
+            padding: '0.75rem 1rem',
+            borderRadius: '0.5rem',
+            backgroundColor: '#dcfce7',
+            color: '#166534',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+          }}
+        >
+          {bannerMessage}
+        </div>
+      )}
 
       {/* KPI Cards Row */}
       <div className="kpi-grid">
