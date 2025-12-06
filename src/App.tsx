@@ -1,5 +1,7 @@
 import './App.css'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { ToastContainer, Bounce } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import { Layout } from './components/layout'
 import OverviewPage from './pages/overview'
 import LoginPage from './authPages/login'
@@ -16,6 +18,19 @@ import ReviewsDisputes from './pages/reviewsdisputes'
 function App() {
   return (
     <BrowserRouter>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
       <Routes>
 
         {/* AUTH PAGES */}
