@@ -10,7 +10,10 @@ import {
   Pencil,
   Trash2,
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import '../Styles/servicemanagement.css';
+import { AddServiceModal } from '../Modals/servicemodal';
+import { useServiceModalStore, type ServiceFormData } from '../store/createservice';
 
 interface ServiceCategory {
   id: number;
@@ -104,11 +107,38 @@ const mockServices: Service[] = [
 
 export default function ServiceManagement() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { openModal, createService } = useServiceModalStore();
 
   const filteredServices = mockServices.filter((service) =>
     service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     service.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleAddService = async (serviceData: ServiceFormData) => {
+    try {
+      const response = await createService(serviceData);
+      console.log('Service created successfully:', response);
+      toast.success('Service created successfully!', {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } catch (error) {
+      console.error('Failed to create service:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create service';
+      toast.error(errorMessage, {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+  };
 
   return (
     <div className="service-management-container">
@@ -125,7 +155,10 @@ export default function ServiceManagement() {
             <FolderPlus className="button-icon" />
             Add Category
           </button>
-          <button className="add-service-button">
+          <button
+            className="add-service-button"
+            onClick={openModal}
+          >
             <Plus className="button-icon" />
             Add Service
           </button>
@@ -220,6 +253,9 @@ export default function ServiceManagement() {
           </table>
         </div>
       </div>
+
+      {/* Add Service Modal */}
+      <AddServiceModal onSubmit={handleAddService} />
     </div>
   );
 }
