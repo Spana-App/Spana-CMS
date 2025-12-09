@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Search,
-  FolderPlus,
+  // FolderPlus,
   Plus,
   Home,
   TreePine,
@@ -13,8 +13,8 @@ import {
 import { toast } from 'react-toastify';
 import '../Styles/servicemanagement.css';
 import { AddServiceModal } from '../Modals/servicemodal';
-import { useServiceModalStore, type ServiceFormData } from '../store/createservice';
-
+import { useServiceModalStore, useViewServiceModalStore, type ServiceFormData, type Service } from '../store/createservice';
+import ViewServiceModal from '../Modals/viewservicemodal';
 interface ServiceCategory {
   id: number;
   name: string;
@@ -22,13 +22,15 @@ interface ServiceCategory {
   icon: typeof Home;
 }
 
-interface Service {
-  id: number;
+interface DisplayService {
+  id: string;
   name: string;
   category: string;
   priceRange: string;
   providers: number;
   status: 'Active' | 'Inactive';
+  description?: string;
+  mediaUrl?: string;
 }
 
 const categories: ServiceCategory[] = [
@@ -38,81 +40,42 @@ const categories: ServiceCategory[] = [
   { id: 4, name: 'Technical Services', serviceCount: 10, icon: Wrench },
 ];
 
-const mockServices: Service[] = [
-  {
-    id: 1,
-    name: 'House Cleaning',
-    category: 'Indoor Services',
-    priceRange: 'R50-150',
-    providers: 45,
-    status: 'Active',
-  },
-  {
-    id: 2,
-    name: 'Plumbing',
-    category: 'Indoor Services',
-    priceRange: 'R80-200',
-    providers: 32,
-    status: 'Active',
-  },
-  {
-    id: 3,
-    name: 'Gardening',
-    category: 'Outdoor Services',
-    priceRange: 'R60-180',
-    providers: 28,
-    status: 'Active',
-  },
-  {
-    id: 4,
-    name: 'Electrical Work',
-    category: 'Technical Services',
-    priceRange: 'R100-300',
-    providers: 21,
-    status: 'Active',
-  },
-  {
-    id: 5,
-    name: 'Lawn Mowing',
-    category: 'Outdoor Services',
-    priceRange: 'R40-120',
-    providers: 38,
-    status: 'Active',
-  },
-  {
-    id: 6,
-    name: 'Legal Consultation',
-    category: 'Professional Services',
-    priceRange: 'R150-400',
-    providers: 15,
-    status: 'Active',
-  },
-  {
-    id: 7,
-    name: 'Accounting Services',
-    category: 'Professional Services',
-    priceRange: 'R100-250',
-    providers: 22,
-    status: 'Active',
-  },
-  {
-    id: 8,
-    name: 'HVAC Repair',
-    category: 'Technical Services',
-    priceRange: 'R120-350',
-    providers: 18,
-    status: 'Active',
-  },
-];
 
 export default function ServiceManagement() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { openModal, createService } = useServiceModalStore();
+  const { openModal, createService, fetchServices, services, isFetching, error } = useServiceModalStore();
 
-  const filteredServices = mockServices.filter((service) =>
+  // Fetch services on component mount
+  useEffect(() => {
+    fetchServices().catch(console.error);
+  }, []);
+
+  // Transform API services to match table format
+  const transformedServices: DisplayService[] = services.map((service: Service) => ({
+    id: service.id,
+    name: service.title,
+    category: 'General', // You might want to add category to the Service interface
+    priceRange: `R${service.price}`,
+    providers: 0, // You might want to add this to the Service interface
+    status: (service.status.toLowerCase() === 'active' ? 'Active' : 'Inactive') as 'Active' | 'Inactive',
+    description: service.description,
+    mediaUrl: service.mediaUrl,
+  }));
+
+  // Filter services based on search query
+  const filteredServices = transformedServices.filter((service) =>
     service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    service.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     service.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const { openViewServiceModal } = useViewServiceModalStore();
+
+  const handleViewService = (serviceId: string) => {
+    openViewServiceModal();
+    console.log(`Viewing service with ID: ${serviceId}`);
+  };
+
 
   const handleAddService = async (serviceData: ServiceFormData) => {
     try {
@@ -126,6 +89,8 @@ export default function ServiceManagement() {
         pauseOnHover: true,
         draggable: true,
       });
+      // Refresh services list after creating a new one
+      await fetchServices();
     } catch (error) {
       console.error('Failed to create service:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create service';
@@ -151,10 +116,10 @@ export default function ServiceManagement() {
           </p>
         </div>
         <div className="header-buttons">
-          <button className="add-category-button">
+          {/* <button className="add-category-button">
             <FolderPlus className="button-icon" />
             Add Category
-          </button>
+          </button> */}
           <button
             className="add-service-button"
             onClick={openModal}
@@ -214,48 +179,61 @@ export default function ServiceManagement() {
 
         {/* Services Table */}
         <div className="table-container">
-          <table className="services-table">
-            <thead>
-              <tr>
-                <th>Service Name</th>
-                <th>Category</th>
-                <th>Price Range</th>
-                <th>Providers</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredServices.map((service) => (
-                <tr key={service.id}>
-                  <td className="service-name-cell">{service.name}</td>
-                  <td className="category-cell">{service.category}</td>
-                  <td className="price-cell">{service.priceRange}</td>
-                  <td className="providers-cell">{service.providers}</td>
-                  <td>
-                    <span className="status-badge status-active">
-                      {service.status}
-                    </span>
-                  </td>
-                  <td className="actions-cell">
-                    <div className="actions-group">
-                      <button className="action-button edit-button">
-                        <Pencil className="action-icon" />
-                      </button>
-                      <button className="action-button delete-button">
-                        <Trash2 className="action-icon" />
-                      </button>
-                    </div>
-                  </td>
+          {isFetching ? (
+            <div style={{ padding: '2rem', textAlign: 'center' }}>Loading services...</div>
+          ) : error ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#dc2626' }}>
+              Error: {error}
+            </div>
+          ) : filteredServices.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center' }}>
+              {searchQuery ? 'No services found matching your search.' : 'No services available.'}
+            </div>
+          ) : (
+            <table className="services-table">
+              <thead>
+                <tr>
+                  <th>Service Name</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Providers</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredServices.map((service) => (
+                  <tr key={service.id} onClick={()=>handleViewService(service.id)}>
+                    <td className="service-name-cell">{service.name}</td>
+                    <td className="category-cell">{service.category}</td>
+                    <td className="price-cell">{service.priceRange}</td>
+                    <td className="providers-cell">{service.providers}</td>
+                    <td>
+                      <span className={`status-badge ${service.status === 'Active' ? 'status-active' : 'status-inactive'}`}>
+                        {service.status}
+                      </span>
+                    </td>
+                    <td className="actions-cell">
+                      <div className="actions-group">
+                        <button className="action-button edit-button">
+                          <Pencil className="action-icon" />
+                        </button>
+                        <button className="action-button delete-button">
+                          <Trash2 className="action-icon" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
       {/* Add Service Modal */}
       <AddServiceModal onSubmit={handleAddService} />
+      <ViewServiceModal />
     </div>
   );
 }
