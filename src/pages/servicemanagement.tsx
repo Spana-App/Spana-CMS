@@ -72,8 +72,12 @@ export default function ServiceManagement() {
   const { openViewServiceModal } = useViewServiceModalStore();
 
   const handleViewService = (serviceId: string) => {
-    openViewServiceModal();
-    console.log(`Viewing service with ID: ${serviceId}`);
+    const service = services.find((s: Service) => s.id === serviceId);
+    if (service) {
+      openViewServiceModal(service);
+    } else {
+      console.error('Service not found with ID:', serviceId);
+    }
   };
 
 
