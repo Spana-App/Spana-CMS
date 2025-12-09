@@ -319,6 +319,11 @@
   color: #1e40af;
 }
 
+.status-inactive {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
 /* Actions */
 .actions-cell {
   text-align: center;
