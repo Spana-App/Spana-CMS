@@ -8,28 +8,53 @@ export interface ServiceFormData {
   image: File | null;
 }
 
+export interface Service {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  mediaUrl?: string;
+  status: string;
+  readonly createdAt?: string;
+  readonly updatedAt?: string;
+}
+
 interface ServiceResponse {
   message?: string;
   data?: any;
   service?: any;
 }
 
+interface ServicesListResponse {
+  message?: string;
+  data?: Service[];
+  services?: Service[];
+}
+
+interface ViewServiceModalState{
+  isOpen: boolean;
+  selectedService: Service | null;
+  openViewServiceModal: (service: Service) => void;
+  closeViewServiceModal: () => void;
+}
+
+
 interface ServiceModalState {
   isOpen: boolean;
   isLoading: boolean;
+  isFetching: boolean;
   error: string | null;
+  services: Service[];
   openModal: () => void;
   closeModal: () => void;
   createService: (serviceData: ServiceFormData) => Promise<ServiceResponse>;
+  deleteService: (serviceId: string) => Promise<ServiceResponse>;
+  fetchServices: () => Promise<Service[]>;
   clearError: () => void;
 }
 
 // Helper function to upload image and get URL
 const uploadImage = async (imageFile: File, _token: string): Promise<string> => {
-  // If you have a separate image upload endpoint, use it here
-  // For now, we'll convert to data URL as a fallback
-  // You should replace this with actual image upload to your server
-  // Example: POST to /admin/upload/image with FormData containing the image
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -146,10 +171,156 @@ const createServiceAPI = async (
   }
 };
 
+
+
+// API function - Delete service
+const deleteServiceAPI = async (
+  serviceId: string,
+  token: string | null
+): Promise<ServiceResponse> => {
+  const url = `https://spana-server-5bhu.onrender.com/admin/services/${serviceId}`;
+
+  if (!token) {
+    throw new Error('Authentication token is required');
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: 'DELETE',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to delete service';
+      try {
+        const errorData = await response.json();
+        if (errorData.message && errorData.error) {
+          errorMessage = `${errorData.message}: ${errorData.error}`;
+        } else {
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        }
+      } catch {
+        errorMessage = response.statusText || `Server returned ${response.status}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Delete Service API Error:', error);
+    
+    if (error instanceof TypeError) {
+      if (error.message === 'Failed to fetch' || error.message.includes('fetch')) {
+        const errorMessage = !navigator.onLine
+          ? 'No internet connection detected.'
+          : 'Unable to connect to server. Please check your connection.';
+        throw new Error(errorMessage);
+      }
+      throw new Error(`Network error: ${error.message}`);
+    }
+    
+    if (error instanceof Error) {
+      throw error;
+    }
+    
+    throw new Error('An unexpected error occurred');
+  }
+};
+
+
+
+// API function - Fetch services
+const fetchServicesAPI = async (token: string | null): Promise<Service[]> => {
+  const url = 'https://spana-server-5bhu.onrender.com/admin/services';
+
+  if (!token) {
+    throw new Error('Authentication token is required');
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to fetch services';
+      try {
+        const errorData = await response.json();
+        if (errorData.message && errorData.error) {
+          errorMessage = `${errorData.message}: ${errorData.error}`;
+        } else {
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        }
+      } catch {
+        errorMessage = response.statusText || `Server returned ${response.status}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data: ServicesListResponse = await response.json();
+    console.log(`These are the services ${data}`);
+    
+    // Handle different response structures
+    if (data.data && Array.isArray(data.data)) {
+      return data.data;
+    }
+    if (data.services && Array.isArray(data.services)) {
+      return data.services;
+    }
+    
+    // If response is directly an array
+    if (Array.isArray(data)) {
+      return data as Service[];
+    }
+    
+    throw new Error('Invalid response format from server');
+  } catch (error) {
+    console.error('Fetch Services API Error:', error);
+    
+    if (error instanceof TypeError) {
+      if (error.message === 'Failed to fetch' || error.message.includes('fetch')) {
+        const errorMessage = !navigator.onLine
+          ? 'No internet connection detected.'
+          : 'Unable to connect to server. Please check your connection.';
+        throw new Error(errorMessage);
+      }
+      throw new Error(`Network error: ${error.message}`);
+    }
+    
+    if (error instanceof Error) {
+      throw error;
+    }
+    
+    throw new Error('An unexpected error occurred');
+  }
+};
+
+export const useViewServiceModalStore = create<ViewServiceModalState>((set) => ({
+  isOpen: false,
+  selectedService: null,
+  openViewServiceModal: (service: Service) => set({ isOpen: true, selectedService: service }),
+  closeViewServiceModal: () => set({ isOpen: false, selectedService: null }),
+}));
+
+
 export const useServiceModalStore = create<ServiceModalState>((set) => ({
   isOpen: false,
   isLoading: false,
+  isFetching: false,
   error: null,
+  services: [],
 
   openModal: () => set({ isOpen: true, error: null }),
   closeModal: () => set({ isOpen: false, error: null }),
@@ -166,6 +337,40 @@ export const useServiceModalStore = create<ServiceModalState>((set) => ({
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create service';
       set({ isLoading: false, error: errorMessage });
+      throw error;
+    }
+  },
+
+  deleteService: async (serviceId: string) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      const token = useAuthStore.getState().token;
+      const response = await deleteServiceAPI(serviceId, token);
+      
+      set({ isLoading: false, error: null });
+      return response;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete service';
+      set({ isLoading: false, error: errorMessage });
+      throw error;
+    }
+  },
+
+  fetchServices: async () => {
+    set({ isFetching: true, error: null });
+    
+    try {
+      const token = useAuthStore.getState().token;
+      const services = await fetchServicesAPI(token);
+
+      console.log(`These are the services${JSON.stringify(services, null, 2)}`);
+
+      set({ isFetching: false, error: null, services });
+      return services;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch services';
+      set({ isFetching: false, error: errorMessage });
       throw error;
     }
   },

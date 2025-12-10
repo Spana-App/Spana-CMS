@@ -15,6 +15,8 @@ import '../Styles/servicemanagement.css';
 import { AddServiceModal } from '../Modals/servicemodal';
 import { useServiceModalStore, useViewServiceModalStore, type ServiceFormData, type Service } from '../store/createservice';
 import ViewServiceModal from '../Modals/viewservicemodal';
+
+
 interface ServiceCategory {
   id: number;
   name: string;
@@ -43,13 +45,46 @@ const categories: ServiceCategory[] = [
 
 export default function ServiceManagement() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { openModal, createService, fetchServices, services, isFetching, error } = useServiceModalStore();
+  const { openModal, createService, deleteService, fetchServices, services, isFetching, error } = useServiceModalStore();
 
   // Fetch services on component mount
   useEffect(() => {
     fetchServices().catch(console.error);
   }, []);
 
+  const handleDeleteService = async (serviceId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent row click from triggering
+    
+    if (!window.confirm('Are you sure you want to delete this service?')) {
+      return;
+    }
+
+    try {
+      const response = await deleteService(serviceId);
+      console.log('Service deleted successfully:', response);
+      toast.success('Service deleted successfully!', {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      // Refresh services list after deletion
+      await fetchServices();
+    } catch (error) {
+      console.error('Failed to delete service:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete service';
+      toast.error(errorMessage, {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+  };
   // Transform API services to match table format
   const transformedServices: DisplayService[] = services.map((service: Service) => ({
     id: service.id,
@@ -222,7 +257,10 @@ export default function ServiceManagement() {
                         <button className="action-button edit-button">
                           <Pencil className="action-icon" />
                         </button>
-                        <button className="action-button delete-button">
+                        <button 
+                          className="action-button delete-button"
+                          onClick={(e) => handleDeleteService(service.id, e)}
+                        >
                           <Trash2 className="action-icon" />
                         </button>
                       </div>
