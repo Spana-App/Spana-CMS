@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-// const loginUrl = import.meta.env.DEV_REACT_APP_API_KEY_LOGIN_URL;
+const loginUrl = import.meta.env.VITE_LOGIN_URL;
+const otpUrl = import.meta.env.VITE_OTP_URL;
+
+console.log('Login URL:', loginUrl);
+// Use the loginUrl on 
 
 interface LoginCredentials {
   email: string;
@@ -28,6 +32,7 @@ interface AuthResponse {
   };
 }
 
+
 interface AuthState {
   token: string | null;
   user: AuthResponse['user'] | null;
@@ -43,12 +48,9 @@ interface AuthState {
 
 // API function - Login with email and password
 const loginAPI = async (credentials: LoginCredentials): Promise<LoginResponse> => {
-  const url = "";
+  const url = loginUrl;
   
   try {
-    // console.log('Attempting login to:', url);
-    // console.log('Request body:', { email: credentials.email, password: '***' });
-    
     const response = await fetch(url, {
       method: 'POST',
       mode: 'cors',
@@ -119,8 +121,9 @@ const loginAPI = async (credentials: LoginCredentials): Promise<LoginResponse> =
 
 // API function - Verify OTP and get token
 const verifyOTPAPI = async (verification: OTPVerification): Promise<AuthResponse> => {
+ const otp = otpUrl;
   try {
-    const response = await fetch("", {
+    const response = await fetch(otp, {
       method: 'POST',
       mode: 'cors',
       headers: { 

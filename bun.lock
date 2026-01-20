@@ -11,7 +11,7 @@
         "react-router": "^7.9.6",
         "react-router-dom": "^7.9.6",
         "react-toastify": "^11.0.5",
-        "zustand": "^5.0.8",
+        "zustand": "^5.0.8"
       },
       "devDependencies": {
         "@eslint/js": "^9.39.1",
@@ -28,12 +28,12 @@
         "ts-jest": "^29.4.5",
         "typescript": "~5.9.3",
         "typescript-eslint": "^8.46.3",
-        "vite": "npm:rolldown-vite@7.2.2",
-      },
-    },
+        "vite": "npm:rolldown-vite@7.2.2"
+      }
+    }
   },
   "overrides": {
-    "vite": "npm:rolldown-vite@7.2.2",
+    "vite": "npm:rolldown-vite@7.2.2"
   },
   "packages": {
     "@babel/code-frame": ["@babel/code-frame@7.27.1", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.27.1", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg=="],
@@ -980,6 +980,6 @@
 
     "@istanbuljs/load-nyc-config/find-up/locate-path/p-locate/p-limit": ["p-limit@2.3.0", "", { "dependencies": { "p-try": "^2.0.0" } }, "sha512-//88mFWSJx8lxCzwdAABTJL2MyWB12+eIY7MDL2SqLmAkeKU9qxRvWuSyTjm3FUmpBEMuFfckAIqEaVGUDxb6w=="],
 
-    "pkg-dir/find-up/locate-path/p-locate/p-limit": ["p-limit@2.3.0", "", { "dependencies": { "p-try": "^2.0.0" } }, "sha512-//88mFWSJx8lxCzwdAABTJL2MyWB12+eIY7MDL2SqLmAkeKU9qxRvWuSyTjm3FUmpBEMuFfckAIqEaVGUDxb6w=="],
+    "pkg-dir/find-up/locate-path/p-locate/p-limit": ["p-limit@2.3.0", "", { "dependencies": { "p-try": "^2.0.0" } }, "sha512-//88mFWSJx8lxCzwdAABTJL2MyWB12+eIY7MDL2SqLmAkeKU9qxRvWuSyTjm3FUmpBEMuFfckAIqEaVGUDxb6w=="]
   }
 }

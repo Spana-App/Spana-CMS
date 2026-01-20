@@ -1,5 +1,10 @@
 import { create } from 'zustand';
 import { useAuthStore } from './authentication';
+const createServiceUrl = import.meta.env.VITE_CREATE_SERVICE_URL;
+const deleteServiceUrl = import.meta.env.VITE_DELETE_SERVICE_URL;
+const fetchServicesUrl = import.meta.env.VITE_FETCH_SERVICES_URL;
+
+
 
 export interface ServiceFormData {
   title: string;
@@ -66,12 +71,13 @@ const uploadImage = async (imageFile: File, _token: string): Promise<string> => 
   });
 };
 
+
 // API function - Create service
 const createServiceAPI = async (
   serviceData: ServiceFormData,
   token: string | null
 ): Promise<ServiceResponse> => {
-  const url = 'https://spana-server-5bhu.onrender.com/admin/services';
+  const url = createServiceUrl;
 
   if (!token) {
     throw new Error('Authentication token is required');
@@ -89,7 +95,6 @@ const createServiceAPI = async (
   }
 
   try {
-    // Prepare the data in the format the server expects
     const title = serviceData.title.trim();
     const description = serviceData.description.trim();
     const price = serviceData.price;
@@ -101,8 +106,6 @@ const createServiceAPI = async (
     // Handle image upload - convert to URL
     let mediaUrl = '';
     if (serviceData.image) {
-      // Upload image and get URL
-      // TODO: Replace with actual image upload endpoint if available
       mediaUrl = await uploadImage(serviceData.image, token);
     }
 
@@ -110,8 +113,8 @@ const createServiceAPI = async (
     const payload = {
       title,
       description,
-      price: Number(price), // Ensure it's a number, not string
-      mediaUrl: mediaUrl || undefined, // Only include if image was provided
+      price: Number(price),
+      mediaUrl: mediaUrl || undefined, 
       status: 'active',
     };
 
@@ -178,7 +181,9 @@ const deleteServiceAPI = async (
   serviceId: string,
   token: string | null
 ): Promise<ServiceResponse> => {
-  const url = `https://spana-server-5bhu.onrender.com/admin/services/${serviceId}`;
+ 
+  // const url = `https://spana-server-5bhu.onrender.com/admin/services/${serviceId}`;
+  const url = `${deleteServiceUrl}/${serviceId}`;
 
   if (!token) {
     throw new Error('Authentication token is required');
@@ -237,7 +242,7 @@ const deleteServiceAPI = async (
 
 // API function - Fetch services
 const fetchServicesAPI = async (token: string | null): Promise<Service[]> => {
-  const url = 'https://spana-server-5bhu.onrender.com/admin/services';
+  const url = fetchServicesUrl;
 
   if (!token) {
     throw new Error('Authentication token is required');
