@@ -123,8 +123,6 @@ const createServiceAPI = async (
       delete (payload as any).mediaUrl;
     }
 
-    console.log('Sending JSON payload:', payload);
-
     const response = await fetch(url, {
       method: 'POST',
       mode: 'cors',
@@ -154,7 +152,7 @@ const createServiceAPI = async (
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Create Service API Error:', error);
+
     
     if (error instanceof TypeError) {
       if (error.message === 'Failed to fetch' || error.message.includes('fetch')) {
@@ -218,7 +216,6 @@ const deleteServiceAPI = async (
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Delete Service API Error:', error);
     
     if (error instanceof TypeError) {
       if (error.message === 'Failed to fetch' || error.message.includes('fetch')) {
@@ -275,7 +272,7 @@ const fetchServicesAPI = async (token: string | null): Promise<Service[]> => {
     }
 
     const data: ServicesListResponse = await response.json();
-    console.log(`These are the services ${data}`);
+ 
     
     // Handle different response structures
     if (data.data && Array.isArray(data.data)) {
@@ -292,7 +289,7 @@ const fetchServicesAPI = async (token: string | null): Promise<Service[]> => {
     
     throw new Error('Invalid response format from server');
   } catch (error) {
-    console.error('Fetch Services API Error:', error);
+    // console.error('Fetch Services API Error:', error);
     
     if (error instanceof TypeError) {
       if (error.message === 'Failed to fetch' || error.message.includes('fetch')) {
@@ -369,7 +366,7 @@ export const useServiceModalStore = create<ServiceModalState>((set) => ({
       const token = useAuthStore.getState().token;
       const services = await fetchServicesAPI(token);
 
-      console.log(`These are the services${JSON.stringify(services, null, 2)}`);
+      // console.log(`These are the services${JSON.stringify(services, null, 2)}`);
 
       set({ isFetching: false, error: null, services });
       return services;

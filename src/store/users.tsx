@@ -66,7 +66,6 @@ const fetchUsersAPI = async (token: string | null): Promise<User[]> => {
     }
 
     const data: UsersListResponse = await response.json();
-    console.log(`These are the users ${JSON.stringify(data, null, 2)}`);
     
     // Handle different response structures
     if (data.data && Array.isArray(data.data)) {
@@ -83,7 +82,7 @@ const fetchUsersAPI = async (token: string | null): Promise<User[]> => {
     
     throw new Error('Invalid response format from server');
   } catch (error) {
-    console.error('Fetch Users API Error:', error);
+
     
     if (error instanceof TypeError) {
       if (error.message === 'Failed to fetch' || error.message.includes('fetch')) {
@@ -115,8 +114,6 @@ export const useUsersStore = create<UsersState>((set) => ({
     try {
       const token = useAuthStore.getState().token;
       const users = await fetchUsersAPI(token);
-
-      console.log(`These are the users${JSON.stringify(users, null, 2)}`);
 
       set({ isFetching: false, error: null, users });
       return users;
