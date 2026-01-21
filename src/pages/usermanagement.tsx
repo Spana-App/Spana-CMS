@@ -1,74 +1,83 @@
-import { useState } from 'react';
-import { Search, UserPlus, MoreVertical } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Search, UserPlus, MoreVertical, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import '../Styles/usermanagement.css';
+import { useUsersStore } from '../store/users';
+import type { User } from '../store/users';
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  type: 'Client' | 'Provider';
-  status: 'Active' | 'Suspended' | 'Inactive';
-  joined: string;
-}
-
-const mockUsers: User[] = [
-  {
-    id: 1,
-    name: 'John Smith',
-    email: 'john.smith@example.com',
-    type: 'Client',
-    status: 'Active',
-    joined: '2024-01-15',
-  },
-  {
-    id: 2,
-    name: 'Sarah Wilson',
-    email: 'sarah.w@example.com',
-    type: 'Provider',
-    status: 'Active',
-    joined: '2024-02-20',
-  },
-  {
-    id: 3,
-    name: 'Mike Johnson',
-    email: 'mike.j@example.com',
-    type: 'Client',
-    status: 'Suspended',
-    joined: '2024-03-10',
-  },
-  {
-    id: 4,
-    name: 'Emma Davis',
-    email: 'emma.d@example.com',
-    type: 'Provider',
-    status: 'Active',
-    joined: '2024-03-25',
-  },
-  {
-    id: 5,
-    name: 'David Brown',
-    email: 'david.b@example.com',
-    type: 'Client',
-    status: 'Inactive',
-    joined: '2024-04-05',
-  },
-];
+const ITEMS_PER_PAGE = 10;
 
 export default function UserManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [userFilter, setUserFilter] = useState('All Users');
   const [statusFilter, setStatusFilter] = useState('All Status');
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const { users, isFetching, error, fetchUsers } = useUsersStore();
 
-  const filteredUsers = mockUsers.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesUserType =
-      userFilter === 'All Users' || user.type === userFilter;
-    const matchesStatus =
-      statusFilter === 'All Status' || user.status === statusFilter;
-    return matchesSearch && matchesUserType && matchesStatus;
-  });
+  useEffect(() => {
+    fetchUsers().catch((err) => {
+      console.error('Error fetching users:', err);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Reset to page 1 when filters or search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, userFilter, statusFilter]);
+
+  // Helper function to format date
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Helper function to get user type (default to Client if not provided)
+  const getUserType = (user: User): 'Client' | 'Provider' => {
+    return user.type || 'Client';
+  };
+
+  // Helper function to get user status (default to Active if not provided)
+  const getUserStatus = (user: User): 'Active' | 'Suspended' | 'Inactive' => {
+    return user.status || 'Active';
+  };
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const matchesSearch =
+        (user.name?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
+        (user.email?.toLowerCase().includes(searchQuery.toLowerCase()) || false);
+      const matchesUserType =
+        userFilter === 'All Users' || getUserType(user) === userFilter;
+      const matchesStatus =
+        statusFilter === 'All Status' || getUserStatus(user) === statusFilter;
+      return matchesSearch && matchesUserType && matchesStatus;
+    });
+  }, [users, searchQuery, userFilter, statusFilter]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Pagination handlers
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(1, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+  };
+
+  const handlePageClick = (page: number) => {
+    setCurrentPage(page);
+  };
 
   return (
     <div className="user-management-container">
@@ -128,57 +137,149 @@ export default function UserManagement() {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="error-message" style={{ padding: '1rem', color: 'red', backgroundColor: '#fee', borderRadius: '4px', margin: '1rem 0' }}>
+            Error: {error}
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isFetching && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2rem' }}>
+            <Loader2 className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+            <span style={{ marginLeft: '0.5rem' }}>Loading users...</span>
+          </div>
+        )}
+
         {/* User Table */}
-        <div className="table-container">
-          <table className="user-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Joined</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user) => (
-                <tr key={user.id}>
-                  <td className="name-cell">{user.name}</td>
-                  <td className="email-cell">{user.email}</td>
-                  <td>
-                    <span
-                      className={`type-badge ${
-                        user.type === 'Provider' ? 'type-provider' : 'type-client'
-                      }`}
-                    >
-                      {user.type}
-                    </span>
-                  </td>
-                  <td>
-                    <span
-                      className={`status-badge ${
-                        user.status === 'Active'
-                          ? 'status-active'
-                          : user.status === 'Suspended'
-                          ? 'status-suspended'
-                          : 'status-inactive'
-                      }`}
-                    >
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="joined-cell">{user.joined}</td>
-                  <td className="actions-cell">
-                    <button className="actions-button">
-                      <MoreVertical className="actions-icon" />
-                    </button>
-                  </td>
+        {!isFetching && (
+          <div className="table-container">
+            <table className="user-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {paginatedUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>
+                      {users.length === 0 ? 'No users found' : 'No users match your filters'}
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedUsers.map((user) => {
+                    const userType = getUserType(user);
+                    const userStatus = getUserStatus(user);
+                    const joinedDate = formatDate(user.joined || user.createdAt);
+                    
+                    return (
+                      <tr key={user.id}>
+                        <td className="name-cell">{user.name || 'N/A'}</td>
+                        <td className="email-cell">{user.email || 'N/A'}</td>
+                        <td>
+                          <span
+                            className={`type-badge ${
+                              userType === 'Provider' ? 'type-provider' : 'type-client'
+                            }`}
+                          >
+                            {userType}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`status-badge ${
+                              userStatus === 'Active'
+                                ? 'status-active'
+                                : userStatus === 'Suspended'
+                                ? 'status-suspended'
+                                : 'status-inactive'
+                            }`}
+                          >
+                            {userStatus}
+                          </span>
+                        </td>
+                        <td className="joined-cell">{joinedDate}</td>
+                        <td className="actions-cell">
+                          <button className="actions-button">
+                            <MoreVertical className="actions-icon" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {!isFetching && filteredUsers.length > 0 && (
+          <div className="pagination-container">
+            <div className="pagination-info">
+              Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users
+            </div>
+            <div className="pagination-controls">
+              <button
+                className="pagination-button"
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="pagination-icon" />
+              </button>
+              
+              <div className="pagination-pages">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                  // Show first page, last page, current page, and pages around current
+                  if (
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={page}
+                        className={`pagination-page-button ${currentPage === page ? 'active' : ''}`}
+                        onClick={() => handlePageClick(page)}
+                        aria-label={`Go to page ${page}`}
+                        aria-current={currentPage === page ? 'page' : undefined}
+                      >
+                        {page}
+                      </button>
+                    );
+                  } else if (
+                    page === currentPage - 2 ||
+                    page === currentPage + 2
+                  ) {
+                    return (
+                      <span key={page} className="pagination-ellipsis">
+                        ...
+                      </span>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+
+              <button
+                className="pagination-button"
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                aria-label="Next page"
+              >
+                <ChevronRight className="pagination-icon" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
