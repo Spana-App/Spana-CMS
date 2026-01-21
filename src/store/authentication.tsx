@@ -3,7 +3,6 @@ import { persist } from 'zustand/middleware';
 const loginUrl = import.meta.env.VITE_LOGIN_URL;
 const otpUrl = import.meta.env.VITE_OTP_URL;
 
-console.log('Login URL:', loginUrl);
 // Use the loginUrl on 
 
 interface LoginCredentials {
@@ -61,8 +60,7 @@ const loginAPI = async (credentials: LoginCredentials): Promise<LoginResponse> =
       body: JSON.stringify(credentials),
     });
     
-    console.log('Response status:', response.status, response.statusText);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+  
 
     if (!response.ok) {
       let errorMessage = 'Login failed';
@@ -81,7 +79,6 @@ const loginAPI = async (credentials: LoginCredentials): Promise<LoginResponse> =
     }
 
     const data = await response.json();
-    console.log("This is the Data,", data);
     
     return {
       message: data.message || 'Login successful',
@@ -165,12 +162,10 @@ const verifyOTPAPI = async (verification: OTPVerification): Promise<AuthResponse
         user: data.user,
       };
     }
-    console.log("This is the Token,", data.token);
 
     throw new Error('Invalid response format from server');
   } catch (error) {
     // Log the full error for debugging
-    console.error('Verify OTP API Error:', error);
     
     if (error instanceof TypeError) {
       if (error.message === 'Failed to fetch' || error.message.includes('fetch')) {
