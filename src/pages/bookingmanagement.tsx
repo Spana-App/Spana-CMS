@@ -1,95 +1,183 @@
-import { useState } from 'react';
-import { Search, Download } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Search, Download, Loader2 } from 'lucide-react';
 import '../Styles/bookingmanagement.css';
-
-interface Booking {
-  id: string;
-  client: string;
-  provider: string;
-  service: string;
-  date: string;
-  amount: string;
-  payment: 'Paid' | 'Pending' | 'Refunded';
-  status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
-}
-
-const mockBookings: Booking[] = [
-  {
-    id: 'BK-001',
-    client: 'John Smith',
-    provider: 'Sarah Wilson',
-    service: 'House Cleaning',
-    date: '2024-06-15',
-    amount: 'R120',
-    payment: 'Paid',
-    status: 'Confirmed',
-  },
-  {
-    id: 'BK-002',
-    client: 'Emma Davis',
-    provider: 'Mike Johnson',
-    service: 'Plumbing',
-    date: '2024-06-16',
-    amount: 'R180',
-    payment: 'Pending',
-    status: 'Pending',
-  },
-  {
-    id: 'BK-003',
-    client: 'David Brown',
-    provider: 'Lisa Chen',
-    service: 'Gardening',
-    date: '2024-06-14',
-    amount: 'R95',
-    payment: 'Paid',
-    status: 'Completed',
-  },
-  {
-    id: 'BK-004',
-    client: 'Anna Lee',
-    provider: 'Tom Wilson',
-    service: 'Electrical Work',
-    date: '2024-06-17',
-    amount: 'R220',
-    payment: 'Paid',
-    status: 'Confirmed',
-  },
-  {
-    id: 'BK-005',
-    client: 'Chris Martin',
-    provider: 'Kate Brown',
-    service: 'Lawn Mowing',
-    date: '2024-06-13',
-    amount: 'R65',
-    payment: 'Refunded',
-    status: 'Cancelled',
-  },
-];
-
-const summaryStats = {
-  pending: 24,
-  confirmed: 156,
-  completed: 1067,
-  cancelled: 38,
-};
+import { useBookingsStore } from '../store/bookings';
+import type { Booking } from '../store/bookings';
 
 export default function BookingManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [bookingFilter, setBookingFilter] = useState('All Bookings');
   const [paymentFilter, setPaymentFilter] = useState('All Payments');
+  
+  const { bookings, isFetching, error, fetchBookings } = useBookingsStore();
 
-  const filteredBookings = mockBookings.filter((booking) => {
-    const matchesSearch =
-      booking.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.service.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesBookingStatus =
-      bookingFilter === 'All Bookings' || booking.status === bookingFilter;
-    const matchesPaymentStatus =
-      paymentFilter === 'All Payments' || booking.payment === paymentFilter;
-    return matchesSearch && matchesBookingStatus && matchesPaymentStatus;
-  });
+  useEffect(() => {
+    fetchBookings().catch((err) => {
+      console.error('Error fetching bookings:', err);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Helper function to format date
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Helper function to format price
+  const formatPrice = (booking: Booking): string => {
+    // Try to get price from payment object first, then booking price
+    let amount: number | undefined;
+    
+    if (booking.payment && typeof booking.payment === 'object' && booking.payment.amount) {
+      amount = booking.payment.amount;
+    } else if (booking.price !== undefined && booking.price !== null) {
+      amount = booking.price;
+    }
+    
+    if (amount === undefined || amount === null) return 'N/A';
+    return `R${amount.toFixed(2)}`;
+  };
+
+  // Helper function to normalize and get booking status
+  const getBookingStatus = (booking: Booking): 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled' => {
+    if (!booking.status) return 'Pending';
+    
+    // Normalize status to handle different cases and formats
+    const status = booking.status.toString().toLowerCase().trim();
+    
+    // Map various status formats to standard values
+    if (status === 'pending' || status === 'pending' || status === 'new') {
+      return 'Pending';
+    }
+    if (status === 'confirmed' || status === 'accept' || status === 'accepted') {
+      return 'Confirmed';
+    }
+    if (status === 'completed' || status === 'done' || status === 'finished' || status === 'fulfilled') {
+      return 'Completed';
+    }
+    if (status === 'cancelled' || status === 'canceled' || status === 'cancel') {
+      return 'Cancelled';
+    }
+    
+    // Default fallback
+    return 'Pending';
+  };
+
+  // Helper function to get client name
+  const getClientName = (booking: Booking): string => {
+    return booking.clientName || booking.userId || 'N/A';
+  };
+
+  // Helper function to get service name
+  const getServiceName = (booking: Booking): string => {
+    return booking.serviceName || booking.serviceId || 'N/A';
+  };
+
+  // Helper function to get provider name (might be in booking data)
+  const getProviderName = (booking: Booking): string => {
+    return booking.providerName || booking.provider || 'N/A';
+  };
+
+  // Helper function to get payment status (derive from booking status or use payment field if available)
+  const getPaymentStatus = (booking: Booking): 'Paid' | 'Pending' | 'Refunded' => {
+    // If payment is an object, extract status from it
+    if (booking.payment && typeof booking.payment === 'object') {
+      const paymentStatus = booking.payment.status?.toLowerCase();
+      if (paymentStatus === 'paid' || paymentStatus === 'completed' || paymentStatus === 'success') {
+        return 'Paid';
+      }
+      if (paymentStatus === 'refunded' || paymentStatus === 'refund') {
+        return 'Refunded';
+      }
+      if (paymentStatus === 'pending' || paymentStatus === 'processing') {
+        return 'Pending';
+      }
+    }
+    
+    // If payment is a string, use it directly
+    if (typeof booking.payment === 'string') {
+      const paymentStr = booking.payment.toLowerCase();
+      if (paymentStr === 'paid') return 'Paid';
+      if (paymentStr === 'refunded') return 'Refunded';
+      return 'Pending';
+    }
+    
+    // Derive payment status from booking status
+    const status = getBookingStatus(booking);
+    if (status === 'Completed' || status === 'Confirmed') {
+      return 'Paid';
+    }
+    if (status === 'Cancelled') {
+      return 'Refunded';
+    }
+    return 'Pending';
+  };
+
+  // Calculate summary stats from real data - dynamically updates based on bookings
+  const summaryStats = useMemo(() => {
+    const stats = {
+      pending: 0,
+      confirmed: 0,
+      completed: 0,
+      cancelled: 0,
+    };
+
+    // Count bookings by their normalized status
+    bookings.forEach((booking) => {
+      const status = getBookingStatus(booking);
+      switch (status) {
+        case 'Pending':
+          stats.pending++;
+          break;
+        case 'Confirmed':
+          stats.confirmed++;
+          break;
+        case 'Completed':
+          stats.completed++;
+          break;
+        case 'Cancelled':
+          stats.cancelled++;
+          break;
+        default:
+          // If status doesn't match, count as pending
+          stats.pending++;
+          break;
+      }
+    });
+
+    return stats;
+  }, [bookings]);
+
+  const filteredBookings = useMemo(() => {
+    return bookings.filter((booking) => {
+      const clientName = getClientName(booking).toLowerCase();
+      const serviceName = getServiceName(booking).toLowerCase();
+      const providerName = getProviderName(booking).toLowerCase();
+      const bookingId = booking.id?.toLowerCase() || '';
+      
+      const matchesSearch =
+        bookingId.includes(searchQuery.toLowerCase()) ||
+        clientName.includes(searchQuery.toLowerCase()) ||
+        providerName.includes(searchQuery.toLowerCase()) ||
+        serviceName.includes(searchQuery.toLowerCase());
+      
+      const status = getBookingStatus(booking);
+      const matchesBookingStatus =
+        bookingFilter === 'All Bookings' || status === bookingFilter;
+      
+      const paymentStatus = getPaymentStatus(booking);
+      const matchesPaymentStatus =
+        paymentFilter === 'All Payments' || paymentStatus === paymentFilter;
+      
+      return matchesSearch && matchesBookingStatus && matchesPaymentStatus;
+    });
+  }, [bookings, searchQuery, bookingFilter, paymentFilter]);
 
   return (
     <div className="booking-management-container">
@@ -185,63 +273,94 @@ export default function BookingManagement() {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="error-message" style={{ padding: '1rem', color: 'red', backgroundColor: '#fee', borderRadius: '4px', margin: '1rem 0' }}>
+            Error: {error}
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isFetching && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2rem' }}>
+            <Loader2 className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+            <span style={{ marginLeft: '0.5rem' }}>Loading bookings...</span>
+          </div>
+        )}
+
         {/* Bookings Table */}
-        <div className="table-container">
-          <table className="bookings-table">
-            <thead>
-              <tr>
-                <th>Booking ID</th>
-                <th>Client</th>
-                <th>Provider</th>
-                <th>Service</th>
-                <th>Date</th>
-                <th>Amount</th>
-                <th>Payment</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredBookings.map((booking) => (
-                <tr key={booking.id}>
-                  <td className="booking-id-cell">{booking.id}</td>
-                  <td className="client-cell">{booking.client}</td>
-                  <td className="provider-cell">{booking.provider}</td>
-                  <td className="service-cell">{booking.service}</td>
-                  <td className="date-cell">{booking.date}</td>
-                  <td className="amount-cell">{booking.amount}</td>
-                  <td>
-                    <span
-                      className={`payment-badge ${
-                        booking.payment === 'Paid'
-                          ? 'payment-paid'
-                          : booking.payment === 'Pending'
-                          ? 'payment-pending'
-                          : 'payment-refunded'
-                      }`}
-                    >
-                      {booking.payment}
-                    </span>
-                  </td>
-                  <td>
-                    <span
-                      className={`status-badge ${
-                        booking.status === 'Pending'
-                          ? 'status-pending'
-                          : booking.status === 'Confirmed'
-                          ? 'status-confirmed'
-                          : booking.status === 'Completed'
-                          ? 'status-completed'
-                          : 'status-cancelled'
-                      }`}
-                    >
-                      {booking.status}
-                    </span>
-                  </td>
+        {!isFetching && (
+          <div className="table-container">
+            <table className="bookings-table">
+              <thead>
+                <tr>
+                  <th>Booking ID</th>
+                  <th>Client</th>
+                  <th>Provider</th>
+                  <th>Service</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Payment</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredBookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ textAlign: 'center', padding: '2rem' }}>
+                      {bookings.length === 0 ? 'No bookings found' : 'No bookings match your filters'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredBookings.map((booking) => {
+                    const status = getBookingStatus(booking);
+                    const paymentStatus = getPaymentStatus(booking);
+                    const bookingDate = formatDate(booking.scheduledDate || booking.bookingDate || booking.createdAt);
+                    
+                    return (
+                      <tr key={booking.id}>
+                        <td className="booking-id-cell">{booking.id || 'N/A'}</td>
+                        <td className="client-cell">{getClientName(booking)}</td>
+                        <td className="provider-cell">{getProviderName(booking)}</td>
+                        <td className="service-cell">{getServiceName(booking)}</td>
+                        <td className="date-cell">{bookingDate}</td>
+                        <td className="amount-cell">{formatPrice(booking)}</td>
+                        <td>
+                          <span
+                            className={`payment-badge ${
+                              paymentStatus === 'Paid'
+                                ? 'payment-paid'
+                                : paymentStatus === 'Pending'
+                                ? 'payment-pending'
+                                : 'payment-refunded'
+                            }`}
+                          >
+                            {paymentStatus}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`status-badge ${
+                              status === 'Pending'
+                                ? 'status-pending'
+                                : status === 'Confirmed'
+                                ? 'status-confirmed'
+                                : status === 'Completed'
+                                ? 'status-completed'
+                                : 'status-cancelled'
+                            }`}
+                          >
+                            {status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
