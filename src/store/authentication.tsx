@@ -46,7 +46,7 @@ interface AuthState {
 }
 
 // API function - Login with email and password
-const loginAPI = async (credentials: LoginCredentials): Promise<LoginResponse> => {
+export const loginAPI = async (credentials: LoginCredentials): Promise<LoginResponse> => {
   const url = loginUrl;
   
   try {
@@ -115,6 +115,8 @@ const loginAPI = async (credentials: LoginCredentials): Promise<LoginResponse> =
     throw new Error('An unexpected error occurred');
   }
 };
+
+
 
 // API function - Verify OTP and get token
 const verifyOTPAPI = async (verification: OTPVerification): Promise<AuthResponse> => {
@@ -200,8 +202,6 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null, pendingEmail: null });
         try {
           const response = await loginAPI(credentials);
-          
-          // Store pending email if OTP is required
           if (response.requiresOTP) {
             set({
               isLoading: false,
@@ -209,7 +209,6 @@ export const useAuthStore = create<AuthState>()(
               error: null,
             });
           } else {
-            // If no OTP required, this shouldn't happen but handle it
             set({
               isLoading: false,
               error: 'Unexpected response from server',
