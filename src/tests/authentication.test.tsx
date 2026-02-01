@@ -1,5 +1,5 @@
 import { test, expect,} from '@jest/globals';
-import { useAuthStore, loginAPI } from '../store/authentication';
+import { useAuthStore, } from '../store/authentication';
 
 test('authentication store is defined', () => {
   expect(useAuthStore).toBeDefined();
