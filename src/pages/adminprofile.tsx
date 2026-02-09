@@ -1,12 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, Shield, Settings, Save } from 'lucide-react';
 import '../Styles/adminprofile.css';
+import { useAuthStore } from '../store/authentication';
+
+// Derive first/last name from store user (name may be "First Last" or we have firstName/lastName)
+function getAdminDisplayNames(user: { name?: string; firstName?: string; lastName?: string } | null | undefined) {
+  if (!user) return { firstName: 'Admin', lastName: 'User' };
+  if (user.firstName && user.lastName) return { firstName: user.firstName, lastName: user.lastName };
+  if (user.name && user.name.trim()) {
+    const parts = user.name.trim().split(/\s+/);
+    if (parts.length >= 2) return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
+    return { firstName: parts[0], lastName: 'User' };
+  }
+  return { firstName: 'Admin', lastName: 'User' };
+}
 
 export default function AdminProfile() {
-  const [firstName, setFirstName] = useState('Admin');
-  const [lastName, setLastName] = useState('User');
-  const [email, setEmail] = useState('admin@servicecms.com');
-  const [phone, setPhone] = useState('+1 (555) 123-4567');
+  const { user } = useAuthStore();
+  const { firstName: defaultFirst, lastName: defaultLast } = getAdminDisplayNames(user);
+
+  const [firstName, setFirstName] = useState(defaultFirst);
+  const [lastName, setLastName] = useState(defaultLast);
+  const [email, setEmail] = useState(user?.email ?? 'admin@servicecms.com');
+  const [phone, setPhone] = useState(user?.phone ?? '');
+
+  // Keep form in sync with auth store when user loads or changes
+  useEffect(() => {
+    const { firstName: f, lastName: l } = getAdminDisplayNames(user);
+    setFirstName(f);
+    setLastName(l);
+    setEmail(user?.email ?? '');
+    setPhone(user?.phone ?? '');
+  }, [user]);
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -46,7 +72,10 @@ export default function AdminProfile() {
             <div className="profile-picture-section">
               <div className="profile-picture-wrapper">
                 <div className="profile-picture-placeholder">
-                  <span className="profile-initials">AU</span>
+                  <span className="profile-initials">
+                    {firstName.charAt(0)}
+                    {lastName.charAt(0)}
+                  </span>
                 </div>
               </div>
               <button type="button" className="change-photo-button">

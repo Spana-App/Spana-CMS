@@ -7,7 +7,11 @@ import { useAuthStore } from "../store/authentication";
 export function DashboardHeader() {
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
+  const displayName = user?.name ?? (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : null) ?? 'Admin User';
+  const initials = user?.firstName && user?.lastName
+    ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`
+    : user?.name ? user.name.trim().split(/\s+/).map((s) => s.charAt(0)).join('').slice(0, 2) : 'AD';
 
   const navigate = useNavigate();
 
@@ -240,9 +244,9 @@ export function DashboardHeader() {
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               <div className="avatar">
-                <span>AD</span>
+                <span>{initials.toUpperCase()}</span>
               </div>
-              <span className="profile-name">Admin User</span>
+              <span className="profile-name">{displayName}</span>
             </button>
 
             <div className={`dropdown-menu ${!isDropdownOpen ? "hidden" : ""}`}>
