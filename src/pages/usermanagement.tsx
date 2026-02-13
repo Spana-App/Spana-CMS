@@ -3,6 +3,7 @@ import { Search, UserPlus, MoreVertical, Loader2, ChevronLeft, ChevronRight } fr
 import '../Styles/usermanagement.css';
 import { useUsersStore } from '../store/users';
 import type { User } from '../store/users';
+import UserActionsPopup from '../Modals/useractionspopup';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -11,6 +12,8 @@ export default function UserManagement() {
   const [userFilter, setUserFilter] = useState('All Users');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [buttonPositions, setButtonPositions] = useState<Record<string, { top: number; left: number }>>({});
   
   const { users, isFetching, error, fetchUsers } = useUsersStore();
 
@@ -77,6 +80,44 @@ export default function UserManagement() {
 
   const handlePageClick = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const handleActionsClick = (userId: string, event: React.MouseEvent<HTMLButtonElement>) => {
+    const button = event.currentTarget;
+    const rect = button.getBoundingClientRect();
+    setButtonPositions({
+      [userId]: {
+        top: rect.bottom + 4,
+        left: rect.right,
+      },
+    });
+    setSelectedUserId(selectedUserId === userId ? null : userId);
+  };
+
+  const handleClosePopup = () => {
+    setSelectedUserId(null);
+  };
+
+  const handleViewUser = (user: User) => {
+    console.log('View user:', user);
+    // TODO: Implement view user functionality
+  };
+
+  const handleEditUser = (user: User) => {
+    console.log('Edit user:', user);
+    // TODO: Implement edit user functionality
+  };
+
+  const handleSuspendUser = (user: User) => {
+    console.log('Suspend/Unsuspend user:', user);
+    // TODO: Implement suspend/unsuspend user functionality
+  };
+
+  const handleDeleteUser = (user: User) => {
+    if (window.confirm(`Are you sure you want to delete ${user.name || user.email}?`)) {
+      console.log('Delete user:', user);
+      // TODO: Implement delete user functionality
+    }
   };
 
   return (
@@ -207,9 +248,25 @@ export default function UserManagement() {
                         </td>
                         <td className="joined-cell">{joinedDate}</td>
                         <td className="actions-cell">
-                          <button className="actions-button">
+                          <button
+                            className="actions-button"
+                            onClick={(e) => handleActionsClick(user.id, e)}
+                            aria-label="User actions"
+                          >
                             <MoreVertical className="actions-icon" />
                           </button>
+                          {selectedUserId === user.id && buttonPositions[user.id] && (
+                            <UserActionsPopup
+                              user={user}
+                              isOpen={true}
+                              onClose={handleClosePopup}
+                              position={buttonPositions[user.id]}
+                              onView={handleViewUser}
+                              onEdit={handleEditUser}
+                              onSuspend={handleSuspendUser}
+                              onDelete={handleDeleteUser}
+                            />
+                          )}
                         </td>
                       </tr>
                     );
