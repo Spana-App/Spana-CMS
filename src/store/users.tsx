@@ -4,15 +4,49 @@ const otpUrl = import.meta.env.VITE_FETCH_CLIENTS_URL;
 
 const fetchUsersUrl =  otpUrl;
 
+export interface Location {
+  type: string;
+  address?: string;
+  coordinates?: number[];
+}
+
+export interface ServiceProvider {
+  id?: string;
+  userId?: string;
+  skills?: string[];
+  experienceYears?: number;
+  isOnline?: boolean;
+  rating?: number;
+  totalReviews?: number;
+  isVerified?: boolean;
+  applicationStatus?: string;
+  [key: string]: any;
+}
+
+export interface Customer {
+  id?: string;
+  userId?: string;
+  [key: string]: any;
+}
+
 export interface User {
   id: string;
-  name: string;
   email: string;
-  type?: 'Client' | 'Provider';
-  status?: 'Active' | 'Suspended' | 'Inactive';
-  joined?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  role?: 'service_provider' | 'customer' | string;
+  status?: 'active' | 'suspended' | 'inactive' | string;
+  isEmailVerified?: boolean;
+  isPhoneVerified?: boolean | null;
+  profileImage?: string;
+  location?: Location;
+  walletBalance?: number;
+  lastLoginAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  serviceProvider?: ServiceProvider | null;
+  customer?: Customer | null;
   [key: string]: any; // Allow for additional fields from API
 }
 

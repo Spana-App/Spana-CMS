@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useRef } from 'react';
-import { Eye, Edit, Ban, Trash2, X } from 'lucide-react';
+import { Eye, Edit, Ban, Trash2, X, Package } from 'lucide-react';
 import type { User } from '../store/users';
 import '../Styles/useractionspopup.css';
 
@@ -13,6 +13,7 @@ interface UserActionsPopupProps {
   onEdit?: (user: User) => void;
   onSuspend?: (user: User) => void;
   onDelete?: (user: User) => void;
+  onAssignServices?: (user: User) => void;
 }
 
 export default function UserActionsPopup({
@@ -24,6 +25,7 @@ export default function UserActionsPopup({
   onEdit,
   onSuspend,
   onDelete,
+  onAssignServices,
 }: UserActionsPopupProps) {
   const popupRef = useRef<HTMLDivElement>(null);
 
@@ -116,6 +118,18 @@ export default function UserActionsPopup({
             >
               <Edit className="action-icon" />
               <span>Edit User</span>
+            </button>
+          )}
+          {onAssignServices && (user.role === 'service_provider' || user.serviceProvider) && (
+            <button
+              className="popup-action-item"
+              onClick={() => {
+                onAssignServices(user);
+                onClose();
+              }}
+            >
+              <Package className="action-icon" />
+              <span>Assign Services</span>
             </button>
           )}
           {onSuspend && (
