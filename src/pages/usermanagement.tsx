@@ -4,7 +4,9 @@ import '../Styles/usermanagement.css';
 import { useUsersStore } from '../store/users';
 import type { User } from '../store/users';
 import UserActionsPopup from '../Modals/useractionspopup';
-
+import  AssignServicesModal from '../Modals/assignservicesmodal';
+import CreateUserModal from '../Modals/createusermodal';
+import createUser from '../store/createuser';
 const ITEMS_PER_PAGE = 10;
 
 export default function UserManagement() {
@@ -14,7 +16,8 @@ export default function UserManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [buttonPositions, setButtonPositions] = useState<Record<string, { top: number; left: number }>>({});
-  
+  const [assignServicesProvider, setAssignServicesProvider] = useState<User | null>(null);
+  const {openModal} =  createUser();
   const { users, isFetching, error, fetchUsers } = useUsersStore();
 
   useEffect(() => {
@@ -40,25 +43,61 @@ export default function UserManagement() {
     }
   };
 
-  // Helper function to get user type (default to Client if not provided)
-  const getUserType = (user: User): 'Client' | 'Provider' => {
-    return user.type || 'Client';
+  // Helper function to get user full name
+  const getUserFullName = (user: User): string => {
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    if (user.firstName) return user.firstName;
+    if (user.lastName) return user.lastName;
+    return user.email || 'N/A';
   };
 
-  // Helper function to get user status (default to Active if not provided)
+  // Helper function to get user type from role (map API role to display type)
+  const getUserType = (user: User): 'Client' | 'Provider' => {
+    const role = user.role?.toLowerCase();
+    if (role === 'service_provider' || role === 'provider') {
+      return 'Provider';
+    }
+    if (role === 'customer' || role === 'client') {
+      return 'Client';
+    }
+    // Fallback: check if serviceProvider exists
+    if (user.serviceProvider) {
+      return 'Provider';
+    }
+    if (user.customer) {
+      return 'Client';
+    }
+    return 'Client'; // Default
+  };
+
+  // Helper function to normalize user status (map API status to display status)
   const getUserStatus = (user: User): 'Active' | 'Suspended' | 'Inactive' => {
-    return user.status || 'Active';
+    const status = user.status?.toLowerCase();
+    if (status === 'active') return 'Active';
+    if (status === 'suspended') return 'Suspended';
+    if (status === 'inactive') return 'Inactive';
+    return 'Active'; // Default
   };
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
+      const fullName = getUserFullName(user).toLowerCase();
+      const email = user.email?.toLowerCase() || '';
+      const phone = user.phone?.toLowerCase() || '';
+      
       const matchesSearch =
-        (user.name?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
-        (user.email?.toLowerCase().includes(searchQuery.toLowerCase()) || false);
+        fullName.includes(searchQuery.toLowerCase()) ||
+        email.includes(searchQuery.toLowerCase()) ||
+        phone.includes(searchQuery.toLowerCase());
+      
       const matchesUserType =
         userFilter === 'All Users' || getUserType(user) === userFilter;
+      
       const matchesStatus =
         statusFilter === 'All Status' || getUserStatus(user) === statusFilter;
+      
       return matchesSearch && matchesUserType && matchesStatus;
     });
   }, [users, searchQuery, userFilter, statusFilter]);
@@ -114,10 +153,19 @@ export default function UserManagement() {
   };
 
   const handleDeleteUser = (user: User) => {
-    if (window.confirm(`Are you sure you want to delete ${user.name || user.email}?`)) {
+    const fullName = getUserFullName(user);
+    if (window.confirm(`Are you sure you want to delete ${fullName}?`)) {
       console.log('Delete user:', user);
       // TODO: Implement delete user functionality
     }
+  };
+
+  const handleAssignServices = (user: User) => {
+    setAssignServicesProvider(user);
+  };
+
+  const handleCloseAssignModal = () => {
+    setAssignServicesProvider(null);
   };
 
   return (
@@ -128,10 +176,12 @@ export default function UserManagement() {
           <h1 className="page-title">User Management</h1>
           <p className="page-subtitle">Manage clients and service providers.</p>
         </div>
-        <button className="add-user-button">
+
+        <button className="add-user-button" onClick={openModal}>
           <UserPlus className="button-icon" />
           Add User
         </button>
+
       </div>
 
       {/* Main Content Panel */}
@@ -218,11 +268,12 @@ export default function UserManagement() {
                   paginatedUsers.map((user) => {
                     const userType = getUserType(user);
                     const userStatus = getUserStatus(user);
-                    const joinedDate = formatDate(user.joined || user.createdAt);
+                    const joinedDate = formatDate(user.createdAt);
+                    const fullName = getUserFullName(user);
                     
                     return (
                       <tr key={user.id}>
-                        <td className="name-cell">{user.name || 'N/A'}</td>
+                        <td className="name-cell">{fullName}</td>
                         <td className="email-cell">{user.email || 'N/A'}</td>
                         <td>
                           <span
@@ -265,6 +316,7 @@ export default function UserManagement() {
                               onEdit={handleEditUser}
                               onSuspend={handleSuspendUser}
                               onDelete={handleDeleteUser}
+                              onAssignServices={handleAssignServices}
                             />
                           )}
                         </td>
@@ -338,6 +390,16 @@ export default function UserManagement() {
           </div>
         )}
       </div>
+
+      {/* Assign Services Modal */}
+      {assignServicesProvider && (
+        <AssignServicesModal
+          provider={assignServicesProvider}
+          isOpen={true}
+          onClose={handleCloseAssignModal}
+        />
+      )}
+        <CreateUserModal/>
     </div>
   );
 }
