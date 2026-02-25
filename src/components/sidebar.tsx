@@ -8,10 +8,11 @@ import {
   Star,
   Layout,
   Bell,
-  BarChart3,
-  Settings,
-  Shield,
+  // BarChart3,
+  // Settings,
+  // Shield,
   UserCog,
+  // CreditCard,
 } from "lucide-react";
 import "../Styles/sidebar.css"
 import { NavLink } from 'react-router-dom';
@@ -21,13 +22,14 @@ const menuItems = [
   { id: "usermanagement", label: "User Management", icon: Users },
   { id: "services", label: "Services", icon: Package },
   { id: "bookings", label: "Bookings", icon: Calendar },
+  // { id: "payments", label: "Payments", icon: CreditCard },
   { id: "documents", label: "Documents", icon: FileText },
   { id: "reviews", label: "Reviews & Disputes", icon: Star },
   { id: "content", label: "Content", icon: Layout },
   { id: "notifications", label: "Notifications", icon: Bell },
-  { id: "analytics", label: "Analytics", icon: BarChart3 },
-  { id: "audit-logs", label: "Audit Logs", icon: Shield },
-  { id: "settings", label: "Settings", icon: Settings },
+  // { id: "analytics", label: "Analytics", icon: BarChart3 },
+  // { id: "audit-logs", label: "Audit Logs", icon: Shield },
+  // { id: "settings", label: "Settings", icon: Settings },
   { id: "profile", label: "Admin Profile", icon: UserCog },
 ];
 
