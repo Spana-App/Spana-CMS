@@ -9,6 +9,7 @@ import OTPPage from './authPages/otp'
 import UserManagement from './pages/usermanagement'
 import ServiceManagement from './pages/servicemanagement'
 import BookingManagement from './pages/bookingmanagement'
+// import PaymentManagement from './pages/paymentmanagement'
 import DocumentManagement from './pages/documentmanagement'
 import ContentManagement from './pages/contentmanagement'
 import NotificationManagement from './pages/notificationmanagement'
@@ -45,6 +46,7 @@ function App() {
           <Route path="usermanagement" element={<UserManagement />} />
           <Route path="services" element={<ServiceManagement />} />
           <Route path="bookings" element={<BookingManagement />} />
+          {/* <Route path="payments" element={<PaymentManagement />} /> */}
           <Route path="documents" element={<DocumentManagement />} />
           <Route path="content" element={<ContentManagement />} />
           <Route path="notifications" element={<NotificationManagement />} />
