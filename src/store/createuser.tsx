@@ -1,7 +1,9 @@
 // useAddUserStore.ts
 import { create } from 'zustand';
 
-export type UserType = 'serviceProvider' | 'user';
+const DEFAULT_API_BASE = 'https://spana-server-5bhu.onrender.com';
+
+export type UserType = 'serviceProvider' | 'admin';
 
 interface ServiceProviderPayload {
   firstName: string;
@@ -20,6 +22,7 @@ interface AddUserState {
   closeModal: () => void;
   setActiveTab: (tab: UserType) => void;
   createServiceProvider: (payload: ServiceProviderPayload) => Promise<boolean>;
+  createAdmin: (payload: ServiceProviderPayload) => Promise<boolean>;
 }
 
 const useAddUserStore = create<AddUserState>((set) => ({
@@ -35,7 +38,48 @@ const useAddUserStore = create<AddUserState>((set) => ({
   createServiceProvider: async (payload) => {
     set({ isLoading: true, error: null });
     try {
-      const url = import.meta.env.VITE_CREATE_SERVICE_PROVIDER_URL;
+      const url =
+        import.meta.env.VITE_CREATE_SERVICE_PROVIDER_URL ||
+        `${DEFAULT_API_BASE}/admin/providers/register`;
+
+      const raw = localStorage.getItem('auth-storage');
+      const token: string | null = raw ? JSON.parse(raw)?.state?.token ?? null : null;
+
+      if (!token) {
+        throw new Error('No auth token found. Please log in again.');
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.message || `Request failed with status ${response.status}`);
+      }
+
+      set({ isLoading: false });
+      return true;
+    } catch (err) {
+      set({
+        isLoading: false,
+        error: err instanceof Error ? err.message : 'Something went wrong',
+      });
+      return false;
+    }
+  },
+
+  createAdmin: async (payload) => {
+    set({ isLoading: true, error: null });
+    try {
+      const url =
+        import.meta.env.VITE_CREATE_ADMIN_URL ||
+        `${DEFAULT_API_BASE}/admin/admins/register`;
 
       const raw = localStorage.getItem('auth-storage');
       const token: string | null = raw ? JSON.parse(raw)?.state?.token ?? null : null;

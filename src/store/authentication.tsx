@@ -1,7 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-const loginUrl = import.meta.env.VITE_LOGIN_URL;
-const otpUrl = import.meta.env.VITE_OTP_URL;
+
+const DEFAULT_API_BASE = 'https://spana-server-5bhu.onrender.com';
+
+const loginUrl =
+  import.meta.env.VITE_LOGIN_URL ||
+  `${DEFAULT_API_BASE}/auth/login`;
+
+const otpUrl =
+  import.meta.env.VITE_OTP_URL ||
+  `${DEFAULT_API_BASE}/admin/otp/verify`;
 
 // Use the loginUrl on 
 

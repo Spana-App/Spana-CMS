@@ -9,12 +9,15 @@ import OTPPage from './authPages/otp'
 import UserManagement from './pages/usermanagement'
 import ServiceManagement from './pages/servicemanagement'
 import BookingManagement from './pages/bookingmanagement'
-// import PaymentManagement from './pages/paymentmanagement'
+import PaymentManagement from './pages/paymentmanagement'
 import DocumentManagement from './pages/documentmanagement'
 import ContentManagement from './pages/contentmanagement'
 import NotificationManagement from './pages/notificationmanagement'
 import AdminProfile from './pages/adminprofile'
 import ReviewsDisputes from './pages/reviewsdisputes'
+import WalletPage from './pages/wallet'
+import ApplicationManagement from './pages/applicationmanagement'
+import ChatsPage from './pages/chats'
 
 
 function App() {
@@ -46,10 +49,13 @@ function App() {
           <Route path="usermanagement" element={<UserManagement />} />
           <Route path="services" element={<ServiceManagement />} />
           <Route path="bookings" element={<BookingManagement />} />
-          {/* <Route path="payments" element={<PaymentManagement />} /> */}
+          <Route path="payments" element={<PaymentManagement />} />
+          <Route path="wallet" element={<WalletPage />} />
+          <Route path="applications" element={<ApplicationManagement />} />
           <Route path="documents" element={<DocumentManagement />} />
           <Route path="content" element={<ContentManagement />} />
           <Route path="notifications" element={<NotificationManagement />} />
+          <Route path="chats" element={<ChatsPage />} />
           <Route path="profile" element={<AdminProfile />} />
           <Route path="reviews" element={<ReviewsDisputes />} />
         </Route>

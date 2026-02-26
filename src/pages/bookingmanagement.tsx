@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Download, Loader2 } from 'lucide-react';
+import { Search, Download, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import '../Styles/bookingmanagement.css';
 import { useBookingsStore } from '../store/bookings';
 import type { Booking } from '../store/bookings';
@@ -31,15 +31,12 @@ export default function BookingManagement() {
 
   // Helper function to format price
   const formatPrice = (booking: Booking): string => {
-    // Try to get price from payment object first, then booking price
     let amount: number | undefined;
-    
-    if (booking.payment && typeof booking.payment === 'object' && booking.payment.amount) {
+    if (booking.payment && typeof booking.payment === 'object' && typeof booking.payment.amount === 'number') {
       amount = booking.payment.amount;
-    } else if (booking.price !== undefined && booking.price !== null) {
+    } else if (typeof booking.price === 'number') {
       amount = booking.price;
     }
-    
     if (amount === undefined || amount === null) return 'N/A';
     return `R${amount.toFixed(2)}`;
   };
@@ -71,17 +68,35 @@ export default function BookingManagement() {
 
   // Helper function to get client name
   const getClientName = (booking: Booking): string => {
-    return booking.clientName || booking.userId || 'N/A';
+    const customerUser = (booking as any).customer?.user;
+    if (customerUser) {
+      const full = `${customerUser.firstName || ''} ${customerUser.lastName || ''}`.trim();
+      if (full) return full;
+      if (customerUser.email) return customerUser.email;
+    }
+    if (booking.clientName) return booking.clientName;
+    return booking.userId || 'N/A';
   };
 
   // Helper function to get service name
   const getServiceName = (booking: Booking): string => {
-    return booking.serviceName || booking.serviceId || 'N/A';
+    const service = (booking as any).service;
+    if (service?.title) return service.title;
+    if (booking.serviceName) return booking.serviceName;
+    return booking.serviceId || 'N/A';
   };
 
   // Helper function to get provider name (might be in booking data)
   const getProviderName = (booking: Booking): string => {
-    return booking.providerName || booking.provider || 'N/A';
+    const providerUser = (booking as any).provider?.user;
+    if (providerUser) {
+      const full = `${providerUser.firstName || ''} ${providerUser.lastName || ''}`.trim();
+      if (full) return full;
+      if (providerUser.email) return providerUser.email;
+    }
+    const providerName = (booking as any).providerName;
+    if (providerName) return providerName;
+    return (booking as any).provider || 'N/A';
   };
 
   // Helper function to get payment status (derive from booking status or use payment field if available)
@@ -178,6 +193,26 @@ export default function BookingManagement() {
       return matchesSearch && matchesBookingStatus && matchesPaymentStatus;
     });
   }, [bookings, searchQuery, bookingFilter, paymentFilter]);
+
+  const ITEMS_PER_PAGE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(filteredBookings.length / ITEMS_PER_PAGE) || 1;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedBookings = filteredBookings.slice(startIndex, endIndex);
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(1, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+  };
+
+  const handlePageClick = (page: number) => {
+    setCurrentPage(page);
+  };
 
   return (
     <div className="booking-management-container">
@@ -305,14 +340,14 @@ export default function BookingManagement() {
                 </tr>
               </thead>
               <tbody>
-                {filteredBookings.length === 0 ? (
+                {paginatedBookings.length === 0 ? (
                   <tr>
                     <td colSpan={8} style={{ textAlign: 'center', padding: '2rem' }}>
                       {bookings.length === 0 ? 'No bookings found' : 'No bookings match your filters'}
                     </td>
                   </tr>
                 ) : (
-                  filteredBookings.map((booking) => {
+                  paginatedBookings.map((booking) => {
                     const status = getBookingStatus(booking);
                     const paymentStatus = getPaymentStatus(booking);
                     const bookingDate = formatDate(booking.scheduledDate || booking.bookingDate || booking.createdAt);
@@ -359,6 +394,61 @@ export default function BookingManagement() {
                 )}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!isFetching && filteredBookings.length > ITEMS_PER_PAGE && (
+          <div className="pagination-container">
+            <div className="pagination-info">
+              Showing {startIndex + 1} to {Math.min(endIndex, filteredBookings.length)} of{' '}
+              {filteredBookings.length} bookings
+            </div>
+            <div className="pagination-controls">
+              <button
+                className="pagination-button"
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="pagination-icon" />
+              </button>
+              <div className="pagination-pages">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                  if (
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={page}
+                        className={`pagination-page-button ${currentPage === page ? 'active' : ''}`}
+                        onClick={() => handlePageClick(page)}
+                      >
+                        {page}
+                      </button>
+                    );
+                  }
+                  if (page === currentPage - 2 || page === currentPage + 2) {
+                    return (
+                      <span key={page} className="pagination-ellipsis">
+                        ...
+                      </span>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+              <button
+                className="pagination-button"
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                aria-label="Next page"
+              >
+                <ChevronRight className="pagination-icon" />
+              </button>
+            </div>
           </div>
         )}
       </div>

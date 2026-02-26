@@ -8,11 +8,11 @@ import {
   Star,
   Layout,
   Bell,
-  // BarChart3,
-  // Settings,
-  // Shield,
+  CreditCard,
+  Wallet2,
+  ClipboardList,
+  MessageCircle,
   UserCog,
-  // CreditCard,
 } from "lucide-react";
 import "../Styles/sidebar.css"
 import { NavLink } from 'react-router-dom';
@@ -22,14 +22,14 @@ const menuItems = [
   { id: "usermanagement", label: "User Management", icon: Users },
   { id: "services", label: "Services", icon: Package },
   { id: "bookings", label: "Bookings", icon: Calendar },
-  // { id: "payments", label: "Payments", icon: CreditCard },
+  { id: "payments", label: "Payments", icon: CreditCard },
+  { id: "wallet", label: "Wallet", icon: Wallet2 },
+  { id: "applications", label: "Applications", icon: ClipboardList },
   { id: "documents", label: "Documents", icon: FileText },
   { id: "reviews", label: "Reviews & Disputes", icon: Star },
   { id: "content", label: "Content", icon: Layout },
   { id: "notifications", label: "Notifications", icon: Bell },
-  // { id: "analytics", label: "Analytics", icon: BarChart3 },
-  // { id: "audit-logs", label: "Audit Logs", icon: Shield },
-  // { id: "settings", label: "Settings", icon: Settings },
+  { id: "chats", label: "Chats", icon: MessageCircle },
   { id: "profile", label: "Admin Profile", icon: UserCog },
 ];
 
@@ -50,10 +50,9 @@ export function DashboardSidebar(props: Tabs) {
         <div className="sidebar-header">
           <div className="sidebar-header-content">
             <div className="sidebar-logo">
-              <image className="sidebar-logo-text"></image>
             </div>
             <div>
-              <h1 className="sidebar-title">Spana App</h1>
+              <h1 className="sidebar-title">Spana CMS</h1>
               <p className="sidebar-subtitle">Admin Portal</p>
             </div>
           </div>

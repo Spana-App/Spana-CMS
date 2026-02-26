@@ -1,7 +1,11 @@
 import { create } from 'zustand';
 import { useAuthStore } from './authentication';
 
-const fetchBookingsUrl = import.meta.env.VITE_FETCH_BOOKINGS_URL;
+const DEFAULT_API_BASE = 'https://spana-server-5bhu.onrender.com';
+
+const fetchBookingsUrl =
+  (import.meta.env.VITE_FETCH_BOOKINGS_URL as string | undefined)?.trim() ||
+  `${DEFAULT_API_BASE}/admin/bookings`;
 
 export interface Payment {
   id?: string;

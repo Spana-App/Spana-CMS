@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Users, Calendar, DollarSign, TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../Styles/overview.css';
+import { useUsersStore } from '../store/users';
+import { useBookingsStore } from '../store/bookings';
+import { usePaymentsStore } from '../store/payments';
 
 interface Activity {
   id: number;
@@ -37,6 +40,10 @@ export default function DashboardPage() {
     state?.successMessage ?? null
   );
 
+  const { users, fetchUsers } = useUsersStore();
+  const { bookings, fetchBookings } = useBookingsStore();
+  const { payments, fetchPayments } = usePaymentsStore();
+
   useEffect(() => {
     if (state?.successMessage) {
       setBannerMessage(state.successMessage);
@@ -53,6 +60,68 @@ export default function DashboardPage() {
       return () => clearTimeout(timer);
     }
   }, [state?.successMessage, navigate, location.pathname]);
+
+  useEffect(() => {
+    fetchUsers().catch((err) => console.error('Error fetching users for overview:', err));
+    fetchBookings().catch((err) => console.error('Error fetching bookings for overview:', err));
+    fetchPayments().catch((err) => console.error('Error fetching payments for overview:', err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const kpis = useMemo(() => {
+    const totalUsers = users.length;
+    const providers = users.filter(
+      (u) => (u.role || '').toLowerCase() === 'service_provider' || !!u.serviceProvider
+    ).length;
+
+    const activeBookings = bookings.filter((b) => {
+      const status = (b.status || '').toString().toLowerCase();
+      return status !== 'cancelled' && status !== 'canceled';
+    }).length;
+
+    let totalRevenue = 0;
+    payments.forEach((p) => {
+      const status = (p.status || '').toLowerCase();
+      if (
+        status === 'paid' ||
+        status === 'completed' ||
+        status === 'success'
+      ) {
+        if (typeof p.amount === 'number') {
+          totalRevenue += p.amount;
+        }
+      }
+    });
+
+    return {
+      totalUsers,
+      providers,
+      activeBookings,
+      totalRevenue,
+    };
+  }, [users, bookings, payments]);
+
+  const bookingTrendHeights = useMemo(() => {
+    if (!bookings.length) return [20, 30, 40, 35, 25, 15];
+
+    const buckets = [0, 0, 0, 0, 0, 0]; // last 6 months
+    const now = new Date();
+
+    bookings.forEach((b) => {
+      const dateStr = b.scheduledDate || b.bookingDate || b.createdAt;
+      if (!dateStr) return;
+      const d = new Date(dateStr);
+      const diffMonths =
+        (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+      if (diffMonths >= 0 && diffMonths < 6) {
+        const index = 5 - diffMonths;
+        buckets[index] += 1;
+      }
+    });
+
+    const max = Math.max(...buckets, 1);
+    return buckets.map((count) => Math.max(10, (count / max) * 100));
+  }, [bookings]);
 
   return (
     <div className="dashboard-overview-container">
@@ -92,10 +161,10 @@ export default function DashboardPage() {
               <Users className="kpi-icon" />
             </div>
           </div>
-          <div className="kpi-value">12,543</div>
+          <div className="kpi-value">{kpis.totalUsers.toLocaleString()}</div>
           <div className="kpi-change positive">
             <ArrowUp className="change-icon" />
-            <span>+12.5% vs last month</span>
+            <span>Live total</span>
           </div>
         </div>
 
@@ -106,10 +175,10 @@ export default function DashboardPage() {
               <Calendar className="kpi-icon" />
             </div>
           </div>
-          <div className="kpi-value">1,247</div>
+          <div className="kpi-value">{kpis.activeBookings.toLocaleString()}</div>
           <div className="kpi-change positive">
             <ArrowUp className="change-icon" />
-            <span>+8.2% vs last month</span>
+            <span>Currently active</span>
           </div>
         </div>
 
@@ -120,10 +189,10 @@ export default function DashboardPage() {
               <DollarSign className="kpi-icon" />
             </div>
           </div>
-          <div className="kpi-value">R94,230</div>
+          <div className="kpi-value">R{kpis.totalRevenue.toFixed(2)}</div>
           <div className="kpi-change positive">
             <ArrowUp className="change-icon" />
-            <span>+23.1% vs last month</span>
+            <span>Paid to date</span>
           </div>
         </div>
 
@@ -134,10 +203,10 @@ export default function DashboardPage() {
               <TrendingUp className="kpi-icon" />
             </div>
           </div>
-          <div className="kpi-value">342</div>
-          <div className="kpi-change negative">
-            <ArrowDown className="change-icon" />
-            <span>-2.4% vs last month</span>
+          <div className="kpi-value">{kpis.providers.toLocaleString()}</div>
+          <div className="kpi-change positive">
+            <ArrowUp className="change-icon" />
+            <span>Live providers</span>
           </div>
         </div>
       </div>
@@ -154,20 +223,17 @@ export default function DashboardPage() {
           <div className="chart-content">
             <div className="bar-chart">
               <div className="chart-bars">
-                <div className="chart-bar" style={{ height: '46%' }}></div>
-                <div className="chart-bar" style={{ height: '58%' }}></div>
-                <div className="chart-bar" style={{ height: '69%' }}></div>
-                <div className="chart-bar" style={{ height: '85%' }}></div>
-                <div className="chart-bar" style={{ height: '73%' }}></div>
-                <div className="chart-bar" style={{ height: '96%' }}></div>
+                {bookingTrendHeights.map((h, idx) => (
+                  <div key={idx} className="chart-bar" style={{ height: `${h}%` }}></div>
+                ))}
               </div>
               <div className="chart-labels">
-                <span>Jan</span>
-                <span>Feb</span>
-                <span>Mar</span>
-                <span>Apr</span>
-                <span>May</span>
-                <span>Jun</span>
+                <span>–5m</span>
+                <span>–4m</span>
+                <span>–3m</span>
+                <span>–2m</span>
+                <span>–1m</span>
+                <span>Now</span>
               </div>
             </div>
           </div>

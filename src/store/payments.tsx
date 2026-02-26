@@ -1,7 +1,11 @@
 import { create } from 'zustand';
 import { useAuthStore } from './authentication';
 
-const fetchPaymentsUrl = import.meta.env.VITE_FETCH_PAYMENTS_URL || 'https://spana-server-5bhu.onrender.com/admin/payments';
+const DEFAULT_API_BASE = 'https://spana-server-5bhu.onrender.com';
+
+const fetchPaymentsUrl =
+  (import.meta.env.VITE_FETCH_PAYMENTS_URL as string | undefined)?.trim() ||
+  `${DEFAULT_API_BASE}/payments/history`;
 
 export interface Payment {
   id: string;

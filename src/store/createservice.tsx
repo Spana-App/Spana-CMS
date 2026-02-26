@@ -1,8 +1,19 @@
 import { create } from 'zustand';
 import { useAuthStore } from './authentication';
-const createServiceUrl = import.meta.env.VITE_CREATE_SERVICE_URL;
-const deleteServiceUrl = import.meta.env.VITE_DELETE_SERVICE_URL;
-const fetchServicesUrl = import.meta.env.VITE_FETCH_SERVICES_URL;
+
+const DEFAULT_API_BASE = 'https://spana-server-5bhu.onrender.com';
+
+const createServiceUrl =
+  import.meta.env.VITE_CREATE_SERVICE_URL ||
+  `${DEFAULT_API_BASE}/admin/services`;
+
+const deleteServiceUrl =
+  import.meta.env.VITE_DELETE_SERVICE_URL ||
+  `${DEFAULT_API_BASE}/admin/services`;
+
+const fetchServicesUrl =
+  import.meta.env.VITE_FETCH_SERVICES_URL ||
+  `${DEFAULT_API_BASE}/admin/services`;
 
 
 
@@ -109,18 +120,17 @@ const createServiceAPI = async (
       mediaUrl = await uploadImage(serviceData.image, token);
     }
 
-    // Create JSON payload as server expects
-    const payload = {
+    // Create JSON payload as server expects (admin can assign provider later)
+    const payload: Record<string, unknown> = {
       title,
       description,
       price: Number(price),
-      mediaUrl: mediaUrl || undefined, 
-      status: 'active',
+      mediaUrl: mediaUrl || undefined,
     };
 
     // Remove mediaUrl if empty to avoid sending empty string
     if (!mediaUrl) {
-      delete (payload as any).mediaUrl;
+      delete payload.mediaUrl;
     }
 
     const response = await fetch(url, {

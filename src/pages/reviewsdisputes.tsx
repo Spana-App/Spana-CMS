@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Search, Flag, Eye, Trash2, Star } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Search, Flag, Eye, Trash2, Star, Loader2 } from 'lucide-react';
 import '../Styles/reviewsdisputes.css';
+import { useComplaintsStore, type Complaint } from '../store/complaints';
 
 interface Review {
   id: number;
@@ -66,39 +67,25 @@ const mockReviews: Review[] = [
   },
 ];
 
-const mockDisputes: Dispute[] = [
-  {
-    id: 1,
-    bookingId: 'BK-003',
-    client: 'David Brown',
-    provider: 'Lisa Chen',
-    issue: 'Service quality complaint',
-    status: 'Open',
-    date: '2024-06-12',
-  },
-  {
-    id: 2,
-    bookingId: 'BK-015',
-    client: 'Tom Harris',
-    provider: 'Jane Smith',
-    issue: 'Payment dispute',
-    status: 'In Progress',
-    date: '2024-06-10',
-  },
-  {
-    id: 3,
-    bookingId: 'BK-008',
-    client: 'Mary Johnson',
-    provider: 'John Doe',
-    issue: 'Cancellation issue',
-    status: 'Resolved',
-    date: '2024-06-08',
-  },
-];
-
 export default function ReviewsDisputes() {
   const [reviewSearch, setReviewSearch] = useState('');
   const flaggedCount = mockReviews.filter((review) => review.flagged).length;
+
+  const {
+    complaints,
+    isFetching,
+    isLoading,
+    error,
+    fetchComplaints,
+    resolveComplaint,
+  } = useComplaintsStore();
+
+  useEffect(() => {
+    fetchComplaints('open').catch((err) => {
+      console.error('Error fetching complaints:', err);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredReviews = mockReviews.filter(
     (review) =>
@@ -117,6 +104,25 @@ export default function ReviewsDisputes() {
       />
     ));
   };
+
+  const normalizedDisputes: Dispute[] = useMemo(
+    () =>
+      complaints.map((c: Complaint, index) => ({
+        id: index + 1,
+        bookingId: c.bookingId || c.id,
+        client: c.customerName || 'Client',
+        provider: c.providerName || 'Provider',
+        issue: c.issue || c.resolution || 'Complaint',
+        status:
+          c.status === 'resolved'
+            ? 'Resolved'
+            : c.status === 'open'
+            ? 'Open'
+            : 'In Progress',
+        date: c.createdAt || '',
+      })),
+    [complaints]
+  );
 
   return (
     <div className="reviews-disputes-container">
@@ -211,7 +217,7 @@ export default function ReviewsDisputes() {
         </div>
       </div>
 
-      {/* Disputes Section */}
+      {/* Disputes / Complaints Section */}
       <div className="disputes-section">
         <div className="section-header">
           <div className="section-title-group">
@@ -219,49 +225,87 @@ export default function ReviewsDisputes() {
             <p className="section-subtitle">Track and resolve customer disputes.</p>
           </div>
         </div>
-
-        {/* Disputes Table */}
+        {error && (
+          <div
+            className="error-message"
+            style={{
+              padding: '1rem',
+              color: '#b91c1c',
+              backgroundColor: '#fee2e2',
+              borderRadius: '4px',
+              margin: '1rem 0',
+            }}
+          >
+            Error: {error}
+          </div>
+        )}
+        {isFetching && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '2rem',
+              gap: '0.5rem',
+            }}
+          >
+            <Loader2 className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+            <span>Loading disputes…</span>
+          </div>
+        )}
         <div className="table-container">
-          <table className="disputes-table">
-            <thead>
-              <tr>
-                <th>Booking ID</th>
-                <th>Client</th>
-                <th>Provider</th>
-                <th>Issue</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockDisputes.map((dispute) => (
-                <tr key={dispute.id}>
-                  <td className="booking-id-cell">{dispute.bookingId}</td>
-                  <td className="client-cell">{dispute.client}</td>
-                  <td className="provider-cell">{dispute.provider}</td>
-                  <td className="issue-cell">{dispute.issue}</td>
-                  <td>
-                    <span
-                      className={`status-badge ${
-                        dispute.status === 'Open'
-                          ? 'status-open'
-                          : dispute.status === 'In Progress'
-                          ? 'status-in-progress'
-                          : 'status-resolved'
-                      }`}
-                    >
-                      {dispute.status}
-                    </span>
-                  </td>
-                  <td className="date-cell">{dispute.date}</td>
-                  <td className="actions-cell">
-                    <button className="review-button">Review</button>
-                  </td>
+          {!isFetching && normalizedDisputes.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center' }}>
+              No complaints or disputes found.
+            </div>
+          ) : (
+            <table className="disputes-table">
+              <thead>
+                <tr>
+                  <th>Booking ID</th>
+                  <th>Client</th>
+                  <th>Provider</th>
+                  <th>Issue</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {normalizedDisputes.map((dispute) => (
+                  <tr key={dispute.id}>
+                    <td className="booking-id-cell">{dispute.bookingId}</td>
+                    <td className="client-cell">{dispute.client}</td>
+                    <td className="provider-cell">{dispute.provider}</td>
+                    <td className="issue-cell">{dispute.issue}</td>
+                    <td>
+                      <span
+                        className={`status-badge ${
+                          dispute.status === 'Open'
+                            ? 'status-open'
+                            : dispute.status === 'In Progress'
+                            ? 'status-in-progress'
+                            : 'status-resolved'
+                        }`}
+                      >
+                        {dispute.status}
+                      </span>
+                    </td>
+                    <td className="date-cell">{dispute.date}</td>
+                    <td className="actions-cell">
+                      <button
+                        className="review-button"
+                        disabled={isLoading || dispute.status === 'Resolved'}
+                        onClick={() => resolveComplaint(dispute.bookingId, 'Issue resolved via admin CMS')}
+                      >
+                        {isLoading ? 'Resolving…' : 'Mark Resolved'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

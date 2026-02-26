@@ -3,6 +3,8 @@ import { Upload, Shield, Settings, Save } from 'lucide-react';
 import '../Styles/adminprofile.css';
 import { useAuthStore } from '../store/authentication';
 
+const DEFAULT_API_BASE = 'https://spana-server-5bhu.onrender.com';
+
 // Derive first/last name from store user (name may be "First Last" or we have firstName/lastName)
 function getAdminDisplayNames(user: { name?: string; firstName?: string; lastName?: string } | null | undefined) {
   if (!user) return { firstName: 'Admin', lastName: 'User' };
@@ -16,7 +18,7 @@ function getAdminDisplayNames(user: { name?: string; firstName?: string; lastNam
 }
 
 export default function AdminProfile() {
-  const { user } = useAuthStore();
+  const { user, token, isAuthenticated } = useAuthStore();
   const { firstName: defaultFirst, lastName: defaultLast } = getAdminDisplayNames(user);
 
   const [firstName, setFirstName] = useState(defaultFirst);
@@ -42,10 +44,72 @@ export default function AdminProfile() {
   const [darkMode, setDarkMode] = useState(false);
   const [activityDigest, setActivityDigest] = useState(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log('Form submitted');
+    setError(null);
+    setSuccess(null);
+
+    if (!isAuthenticated || !token) {
+      setError('You must be logged in as an admin to update your profile.');
+      return;
+    }
+
+    if (newPassword && newPassword !== confirmPassword) {
+      setError('New password and confirmation do not match.');
+      return;
+    }
+
+    const payload: Record<string, unknown> = {
+      firstName,
+      lastName,
+      phone,
+    };
+
+    if (newPassword) {
+      payload.password = newPassword;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`${DEFAULT_API_BASE}/admin/profile`, {
+        method: 'PUT',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        let message = 'Failed to update profile';
+        try {
+          const data = await response.json();
+          if (data.message && data.error) {
+            message = `${data.message}: ${data.error}`;
+          } else {
+            message = data.message || data.error || message;
+          }
+        } catch {
+          message = response.statusText || message;
+        }
+        throw new Error(message);
+      }
+
+      setSuccess('Profile updated successfully.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update profile.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -59,6 +123,35 @@ export default function AdminProfile() {
       </div>
 
       <form onSubmit={handleSubmit} className="profile-form">
+        {error && (
+          <div
+            className="error-message"
+            style={{
+              padding: '0.75rem 1rem',
+              marginBottom: '1rem',
+              borderRadius: '0.5rem',
+              backgroundColor: '#fee2e2',
+              color: '#b91c1c',
+              fontSize: '0.875rem',
+            }}
+          >
+            {error}
+          </div>
+        )}
+        {success && (
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              marginBottom: '1rem',
+              borderRadius: '0.5rem',
+              backgroundColor: '#dcfce7',
+              color: '#166534',
+              fontSize: '0.875rem',
+            }}
+          >
+            {success}
+          </div>
+        )}
         {/* Top Sections Grid */}
         <div className="profile-grid">
           {/* Profile Information Section */}
@@ -273,12 +366,12 @@ export default function AdminProfile() {
 
         {/* Action Buttons */}
         <div className="form-actions">
-          <button type="button" className="cancel-button">
+          <button type="button" className="cancel-button" disabled={isSaving}>
             Cancel
           </button>
-          <button type="submit" className="save-button">
+          <button type="submit" className="save-button" disabled={isSaving}>
             <Save className="button-icon" />
-            Save Changes
+            {isSaving ? 'Saving…' : 'Save Changes'}
           </button>
         </div>
       </form>

@@ -4,9 +4,19 @@ import type { Service } from './createservice';
 
 // Provider-centric: POST /admin/providers/:providerId/services with body { serviceIds }
 // Service-centric: POST /admin/services/:serviceId/assign with body { providerId }
-const assignServiceBaseUrl = import.meta.env.VITE_ASSIGN_SERVICE_URL || 'https://spana-server-5bhu.onrender.com/admin/services';
-const assignProviderBaseUrl = import.meta.env.VITE_ASSIGN_PROVIDER_SERVICES_URL || 'https://spana-server-5bhu.onrender.com/admin/providers';
-const fetchProviderServicesUrl = import.meta.env.VITE_FETCH_PROVIDER_SERVICES_URL || 'https://spana-server-5bhu.onrender.com/admin/providers';
+const DEFAULT_API_BASE = 'https://spana-server-5bhu.onrender.com';
+
+const assignServiceBaseUrl =
+  import.meta.env.VITE_ASSIGN_SERVICE_URL ||
+  `${DEFAULT_API_BASE}/admin/services`;
+
+const assignProviderBaseUrl =
+  import.meta.env.VITE_ASSIGN_PROVIDER_SERVICES_URL ||
+  `${DEFAULT_API_BASE}/admin/providers`;
+
+const fetchProviderServicesUrl =
+  import.meta.env.VITE_FETCH_PROVIDER_SERVICES_URL ||
+  `${DEFAULT_API_BASE}/admin/providers`;
 const useProviderCentricAssign = import.meta.env.VITE_ASSIGN_USE_PROVIDER_ENDPOINT === 'true';
 
 export interface ServiceAssignment {

@@ -1,89 +1,72 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Search,
   Download,
   FileText,
-  Shield,
-  UserCheck,
-  Receipt,
-  Award,
   Send,
   MessageSquare,
   Upload,
+  CheckCircle2,
+  XCircle,
+  Loader2,
 } from 'lucide-react';
 import '../Styles/documentmanagement.css';
+import { useDocumentsStore, type PendingDocument } from '../store/documents';
 
-interface Document {
-  id: number;
-  provider: string;
-  documentType: string;
-  documentIcon: typeof FileText;
-  status: 'Approved' | 'Pending Review' | 'Rejected' | 'Pending Update';
-  uploaded: string;
-  comments: number;
-}
+const getProviderName = (doc: PendingDocument): string => {
+  if (doc.user?.firstName || doc.user?.lastName) {
+    return `${doc.user.firstName ?? ''} ${doc.user.lastName ?? ''}`.trim();
+  }
+  return doc.user?.email || doc.userId || 'Unknown provider';
+};
 
-const mockDocuments: Document[] = [
-  {
-    id: 1,
-    provider: 'Sarah Wilson',
-    documentType: 'Business License',
-    documentIcon: FileText,
-    status: 'Approved',
-    uploaded: '2024-06-10',
-    comments: 0,
-  },
-  {
-    id: 2,
-    provider: 'Mike Johnson',
-    documentType: 'Insurance Certificate',
-    documentIcon: Shield,
-    status: 'Pending Review',
-    uploaded: '2024-06-12',
-    comments: 2,
-  },
-  {
-    id: 3,
-    provider: 'Lisa Chen',
-    documentType: 'ID Verification',
-    documentIcon: UserCheck,
-    status: 'Approved',
-    uploaded: '2024-06-08',
-    comments: 3,
-  },
-  {
-    id: 4,
-    provider: 'Tom Wilson',
-    documentType: 'Tax Document',
-    documentIcon: Receipt,
-    status: 'Rejected',
-    uploaded: '2024-06-11',
-    comments: 1,
-  },
-  {
-    id: 5,
-    provider: 'Kate Brown',
-    documentType: 'Certification',
-    documentIcon: Award,
-    status: 'Pending Update',
-    uploaded: '2024-06-09',
-    comments: 0,
-  },
-];
+const getDocumentType = (doc: PendingDocument): string =>
+  doc.type || (doc as any).documentType || doc.metadata?.name || 'Document';
 
-const summaryStats = {
-  pendingReview: 12,
-  approved: 234,
-  rejected: 8,
-  pendingUpdate: 5,
+const formatDate = (value?: string): string => {
+  if (!value) return 'N/A';
+  try {
+    return new Date(value).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  } catch {
+    return value;
+  }
 };
 
 export default function DocumentManagement() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { documents, isFetching, isLoading, error, fetchPendingDocuments, verifyDocument } =
+    useDocumentsStore();
 
-  const filteredDocuments = mockDocuments.filter((doc) =>
-    doc.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.documentType.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    fetchPendingDocuments().catch((err) => {
+      console.error('Error fetching documents:', err);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const summaryStats = useMemo(() => {
+    const total = documents.length;
+    return {
+      pendingReview: total,
+      approved: 0,
+      rejected: 0,
+      pendingUpdate: 0,
+    };
+  }, [documents]);
+
+  const filteredDocuments = useMemo(
+    () =>
+      documents.filter((doc) => {
+        const provider = getProviderName(doc).toLowerCase();
+        const type = getDocumentType(doc).toLowerCase();
+        const q = searchQuery.toLowerCase();
+        return provider.includes(q) || type.includes(q);
+      }),
+    [documents, searchQuery]
   );
 
   return (
@@ -92,11 +75,9 @@ export default function DocumentManagement() {
       <div className="document-management-header">
         <div className="header-content">
           <h1 className="page-title">Document Management</h1>
-          <p className="page-subtitle">
-            Review and manage provider documents.
-          </p>
+            <p className="page-subtitle">Review and manage provider documents.</p>
         </div>
-        <button className="download-all-button">
+        <button className="download-all-button" disabled>
           <Download className="button-icon" />
           Download All
         </button>
@@ -159,74 +140,109 @@ export default function DocumentManagement() {
           </div>
         </div>
 
-        {/* Documents Table */}
+        {error && (
+          <div
+            className="error-message"
+            style={{
+              padding: '1rem',
+              color: '#b91c1c',
+              backgroundColor: '#fee2e2',
+              borderRadius: '4px',
+              margin: '1rem 0',
+            }}
+          >
+            Error: {error}
+          </div>
+        )}
+
+        {isFetching && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '2rem',
+              gap: '0.5rem',
+            }}
+          >
+            <Loader2 className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+            <span>Loading documents…</span>
+          </div>
+        )}
+
         <div className="table-container">
-          <table className="documents-table">
-            <thead>
-              <tr>
-                <th>Provider</th>
-                <th>Document Type</th>
-                <th>Status</th>
-                <th>Uploaded</th>
-                <th>Comments</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDocuments.map((doc) => {
-                const DocumentIcon = doc.documentIcon;
-                return (
+          {!isFetching && filteredDocuments.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center' }}>
+              {documents.length === 0 ? 'No pending documents found.' : 'No documents match your search.'}
+            </div>
+          ) : (
+            <table className="documents-table">
+              <thead>
+                <tr>
+                  <th>Provider</th>
+                  <th>Document Type</th>
+                  <th>Uploaded</th>
+                  <th>Preview</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDocuments.map((doc) => (
                   <tr key={doc.id}>
-                    <td className="provider-cell">{doc.provider}</td>
+                    <td className="provider-cell">{getProviderName(doc)}</td>
                     <td className="document-type-cell">
                       <div className="document-type-wrapper">
-                        <DocumentIcon className="document-type-icon" />
-                        <span>{doc.documentType}</span>
+                        <FileText className="document-type-icon" />
+                        <span>{getDocumentType(doc)}</span>
                       </div>
                     </td>
-                    <td>
-                      <span
-                        className={`status-badge ${
-                          doc.status === 'Approved'
-                            ? 'status-approved'
-                            : doc.status === 'Pending Review'
-                            ? 'status-pending-review'
-                            : doc.status === 'Rejected'
-                            ? 'status-rejected'
-                            : 'status-pending-update'
-                        }`}
-                      >
-                        {doc.status}
-                      </span>
-                    </td>
-                    <td className="uploaded-cell">{doc.uploaded}</td>
+                    <td className="uploaded-cell">{formatDate(doc.createdAt || doc.updatedAt)}</td>
                     <td className="comments-cell">
-                      <div className="comments-wrapper">
-                        <MessageSquare className="comments-icon" />
-                        <span>{doc.comments}</span>
-                      </div>
+                      {doc.url ? (
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="preview-link"
+                        >
+                          <MessageSquare className="comments-icon" />
+                          <span>Open</span>
+                        </a>
+                      ) : (
+                        <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>N/A</span>
+                      )}
                     </td>
                     <td className="actions-cell">
                       <div className="actions-group">
-                        <button className="action-button" title="Download">
+                        <button
+                          className="action-button"
+                          title="Approve"
+                          onClick={() => verifyDocument(doc.id, doc.userId, true)}
+                          disabled={isLoading}
+                        >
+                          <CheckCircle2 className="action-icon" />
+                        </button>
+                        <button
+                          className="action-button"
+                          title="Reject"
+                          onClick={() => verifyDocument(doc.id, doc.userId, false)}
+                          disabled={isLoading}
+                        >
+                          <XCircle className="action-icon" />
+                        </button>
+                        <button className="action-button" title="Download" disabled>
                           <Download className="action-icon" />
                         </button>
-                        <button className="action-button" title="Send">
-                          <Send className="action-icon" />
-                        </button>
-                        <button className="action-button" title="Comment">
-                          <MessageSquare className="action-icon" />
-                        </button>
-                        <button className="action-button" title="Upload">
+                        <button className="action-button" title="Upload replacement" disabled>
                           <Upload className="action-icon" />
                         </button>
                       </div>
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

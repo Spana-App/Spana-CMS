@@ -24,9 +24,8 @@
 
 .aside-bar {
   width: 250px; /* fixed sidebar width */
-  background-color: #ad2727;
+  background-color: #ffffff;
   flex-shrink: 0;
-  overflow-y: auto;
 }
 
 .main-content {

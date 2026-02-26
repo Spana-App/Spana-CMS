@@ -5,7 +5,7 @@ import createUser from '../store/createuser';
 import { toast } from 'react-toastify';
 
 const CreateUserModal: React.FC = () => {
-    const { isOpen, activeTab, isLoading, error, closeModal, setActiveTab, createServiceProvider } =
+    const { isOpen, activeTab, isLoading, error, closeModal, setActiveTab, createServiceProvider, createAdmin } =
     createUser();
 
   const [form, setForm] = useState({
@@ -30,8 +30,16 @@ const CreateUserModal: React.FC = () => {
       } else {
         toast.error('Failed to create service provider. Please try again.');
       }
+    } else if (activeTab === 'admin') {
+      const success = await createAdmin(form);
+      if (success) {
+        setForm({ firstName: '', lastName: '', email: '', phone: '' });
+        closeModal();
+        toast.success(`Admin ${form.firstName} ${form.lastName} created successfully! Credentials email sent.`);
+      } else {
+        toast.error('Failed to create admin. Please check the email domain and try again.');
+      }
     }
-    // user tab POST can be wired up here later
   };
 
   const handleOverlayClick = () => {
@@ -60,17 +68,17 @@ const CreateUserModal: React.FC = () => {
             Service Provider
           </button>
           <button
-            className={`aum-tab ${activeTab === 'user' ? 'aum-tab--active' : ''}`}
-            onClick={() => setActiveTab('user')}
+            className={`aum-tab ${activeTab === 'admin' ? 'aum-tab--active' : ''}`}
+            onClick={() => setActiveTab('admin')}
             type="button"
           >
-            User
+            Admin
           </button>
         </div>
 
         {/* Form */}
         <form className="aum-form" onSubmit={handleSubmit}>
-          {activeTab === 'serviceProvider' ? (
+          {activeTab === 'serviceProvider' || activeTab === 'admin' ? (
             <>
               <div className="aum-row">
                 <div className="aum-field">
@@ -129,11 +137,7 @@ const CreateUserModal: React.FC = () => {
                 />
               </div>
             </>
-          ) : (
-            <div className="aum-coming-soon">
-              <p>User creation coming soon.</p>
-            </div>
-          )}
+          ) : null}
 
           {error && <p className="aum-error">{error}</p>}
 
@@ -149,7 +153,7 @@ const CreateUserModal: React.FC = () => {
             <button
               type="submit"
               className="aum-btn aum-btn--submit"
-              disabled={isLoading || activeTab === 'user'}
+              disabled={isLoading}
             >
               {isLoading ? 'Saving...' : 'Create'}
             </button>

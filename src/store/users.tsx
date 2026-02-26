@@ -1,8 +1,11 @@
 import { create } from 'zustand';
 import { useAuthStore } from './authentication';
-const otpUrl = import.meta.env.VITE_FETCH_CLIENTS_URL;
 
-const fetchUsersUrl =  otpUrl;
+const DEFAULT_API_BASE = 'https://spana-server-5bhu.onrender.com';
+
+const fetchUsersUrl =
+  (import.meta.env.VITE_FETCH_CLIENTS_URL as string | undefined)?.trim() ||
+  `${DEFAULT_API_BASE}/admin/users`;
 
 export interface Location {
   type: string;
