@@ -3,7 +3,6 @@ import {
   Search,
   Download,
   FileText,
-  Send,
   MessageSquare,
   Upload,
   CheckCircle2,

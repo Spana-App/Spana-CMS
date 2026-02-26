@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Users, Calendar, DollarSign, TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
+import { Users, Calendar, DollarSign, TrendingUp, ArrowUp } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../Styles/overview.css';
 import { useUsersStore } from '../store/users';
